@@ -393,7 +393,7 @@ namespace projekt_1
 
                 int newStartX = currentEdge.Start.X < prevEdge.Start.X
                     ? prevEdge.Start.X - (int)horizontalDistance
-                    : prevEdge.Start.X - (int)horizontalDistance;
+                    : prevEdge.Start.X + (int)horizontalDistance;
 
                 currentEdge.Start = new Point(newStartX,currentEdge.End.Y);
 
