@@ -139,6 +139,7 @@ namespace projekt_1
         }
         private void UpdateEdgesWithVisitor(int draggedVertexIndex, Point delta)
         {
+
             EdgeStartChangeVisitor forwardVisitor = new EdgeStartChangeVisitor();
             EdgeEndChangeVisitor backwardVisitor = new EdgeEndChangeVisitor();
             List<Edge> edgeCopy = edges.Select(e => e.Clone()).ToList();
@@ -148,7 +149,6 @@ namespace projekt_1
             bool backwardSuccess = true;
             int modifiedEdgesCount = 2;
             edgeCopy[forwardIndex].Start = edgeCopy[backwardIndex].End = new Point(edges[forwardIndex].Start.X + delta.X, edges[forwardIndex].Start.Y + delta.Y);
-
 
 
             for (int i = 0; i < edges.Count && forwardSuccess; i++)
@@ -178,10 +178,12 @@ namespace projekt_1
 
                 backwardSuccess = currentEdge.Accept(backwardVisitor, prevEdge, delta);
 
+                modifiedEdgesCount++;
+
                 if (backwardSuccess == false)
                     break;
 
-                modifiedEdgesCount++;
+                
 
 
                 if ((backwardIndex + edges.Count - 1) % edges.Count == draggedVertexIndex)
@@ -211,7 +213,7 @@ namespace projekt_1
 
         }
 
-            private void Canvas_MouseMove(object sender, MouseEventArgs e)
+        private void Canvas_MouseMove(object sender, MouseEventArgs e)
         {
             Point mouseLocation = new Point(e.X, e.Y);
 
@@ -349,7 +351,11 @@ namespace projekt_1
         {
             double distance = Math.Abs((end.Y - start.Y) * point.X - (end.X - start.X) * point.Y + end.X * start.Y - end.Y * start.X)
                               / Math.Sqrt(Math.Pow(end.Y - start.Y, 2) + Math.Pow(end.X - start.X, 2));
-            return distance <= tolerance;
+
+            bool withinXBounds = ((point.X >= (Math.Min(start.X, end.X) - tolerance)) && (point.X <= (Math.Max(start.X, end.X)) + tolerance));
+            bool withinYBounds = (point.Y >= (Math.Min(start.Y, end.Y)-tolerance)) && (point.Y <= Math.Max(start.Y, end.Y)+tolerance);
+
+            return distance <= tolerance && withinXBounds && withinYBounds;
         }
         private double Distance(Point p1, Point p2)
         {
@@ -561,21 +567,19 @@ namespace projekt_1
 
             // Oblicz now¹ pozycjê punktu koñcowego
             double angle = Math.Atan2(currentEdge.End.Y - currentEdge.Start.Y, currentEdge.End.X - currentEdge.Start.X);
+           
             var newEnd = new Point(
                 currentEdge.Start.X + (int)(newLength * Math.Cos(angle)),
                 currentEdge.Start.Y + (int)(newLength * Math.Sin(angle))
             );
 
             // Ustaw now¹ krawêdŸ FixedLengthEdge
-            edges[clickedEdgeIndex] = new FixedLengthEdge(currentEdge.Start, newEnd, newLength);
+            Point delta = new Point(newEnd.X - currentEdge.End.X, newEnd.Y - currentEdge.End.Y);
+            edges[clickedEdgeIndex] = new FixedLengthEdge(currentEdge.Start, currentEdge.End, newLength);
 
             // Sprawdzanie dopasowania pozosta³ych krawêdzi
             bool modificationSuccess = false;
-            /*int currentIndex = (clickedEdgeIndex+1)%edges.Count;
-            Point delta = new Point(newEnd.X - currentEdge.End.X, newEnd.Y - currentEdge.End.Y);
-            currentEdge = edges[currentIndex];
-            currentEdge.Start = newEnd;*/
-            Point delta = new Point(newEnd.X - currentEdge.End.X, newEnd.Y - currentEdge.End.Y);
+           
             int currentIndex = clickedEdgeIndex;
 
             while (true)
