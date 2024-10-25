@@ -23,8 +23,8 @@ namespace projekt_1
             contextMenuEdge = new ContextMenuStrip();
             var deleteItem = new ToolStripMenuItem("Usuñ wierzcho³ek");
             contextMenuEdge.Items.Add("Dodaj wierzcho³ek", null, AddVertexMenuItem_Click);
-            contextMenuEdge.Items.Add("Dodaj ograniczenie poziome",null,AddHorizontalConstraint_Click);
-            contextMenuEdge.Items.Add("Dodaj ograniczenie pionowe",null,AddVerticalConstraint_Click);
+            contextMenuEdge.Items.Add("Dodaj ograniczenie poziome", null, AddHorizontalConstraint_Click);
+            contextMenuEdge.Items.Add("Dodaj ograniczenie pionowe", null, AddVerticalConstraint_Click);
             contextMenuEdge.Items.Add("Dodaj ograniczenie d³ugoœci", null, AddFixedLengthConstraint_Click);
             contextMenuEdge.Items.Add("Usuñ ograniczenie", null, DeleteConstraint_Click);
             deleteItem.Click += DeleteVertex_Click;
@@ -44,18 +44,12 @@ namespace projekt_1
             Pen edgePen = new Pen(Color.Black, 1); // Krawêdzie o gruboœci 1
             Pen vertexPen = new Pen(Color.Black, 2); // Wierzcho³ki bêd¹ grubsze
             Brush fillBrush = new SolidBrush(Color.LightBlue); // Pêdzel do wype³nienia jasnoniebieskim kolorem
-
-            // Jeœli rysowanie zakoñczone i jest wystarczaj¹ca liczba krawêdzi, wype³nij wielok¹t
-            /*if (drawingComplete && edges.Count > 2)
-            {
-                Point[] polygonPoints = edges.Select(edge => edge.Start).ToArray();
-                g.FillPolygon(fillBrush, polygonPoints); // Wype³nij wnêtrze wielok¹ta jasnoniebieskim kolorem
-            }*/
+            EdgeDrawingVisitor drawingVisitor = new EdgeDrawingVisitor();
 
             // Rysowanie wszystkich krawêdzi
             foreach (var edge in edges)
             {
-                edge.Draw(g, edgePen);
+                edge.AcceptDraw(drawingVisitor, g, edgePen);
             }
 
             // Rysowanie wierzcho³ków jako ma³e okrêgi
@@ -183,7 +177,7 @@ namespace projekt_1
                 if (backwardSuccess == false)
                     break;
 
-                
+
 
 
                 if ((backwardIndex + edges.Count - 1) % edges.Count == draggedVertexIndex)
@@ -193,10 +187,10 @@ namespace projekt_1
 
                 backwardIndex = (backwardIndex + edges.Count - 1) % edges.Count;
             }
- 
-            if(modifiedEdgesCount > edges.Count)
+
+            if (modifiedEdgesCount > edges.Count)
             {
-                foreach(var edge in edges)
+                foreach (var edge in edges)
                 {
                     edge.Start = new Point(edge.Start.X + delta.X, edge.Start.Y + delta.Y);
                     edge.End = new Point(edge.End.X + delta.X, edge.End.Y + delta.Y);
@@ -204,7 +198,7 @@ namespace projekt_1
             }
             else
             {
-                for(int i = 0;i< edges.Count;i++)
+                for (int i = 0; i < edges.Count; i++)
                 {
                     edges[i].Start = edgeCopy[i].Start;
                     edges[i].End = edgeCopy[i].End;
@@ -353,7 +347,7 @@ namespace projekt_1
                               / Math.Sqrt(Math.Pow(end.Y - start.Y, 2) + Math.Pow(end.X - start.X, 2));
 
             bool withinXBounds = ((point.X >= (Math.Min(start.X, end.X) - tolerance)) && (point.X <= (Math.Max(start.X, end.X)) + tolerance));
-            bool withinYBounds = (point.Y >= (Math.Min(start.Y, end.Y)-tolerance)) && (point.Y <= Math.Max(start.Y, end.Y)+tolerance);
+            bool withinYBounds = (point.Y >= (Math.Min(start.Y, end.Y) - tolerance)) && (point.Y <= Math.Max(start.Y, end.Y) + tolerance);
 
             return distance <= tolerance && withinXBounds && withinYBounds;
         }
@@ -422,7 +416,7 @@ namespace projekt_1
         }
         private void AddHorizontalConstraint_Click(object sender, EventArgs e)
         {
-            if (GetPreviousEdge(edges[clickedEdgeIndex]) is HorizontalEdge || GetNextEdge(edges[clickedEdgeIndex]) is HorizontalEdge) 
+            if (GetPreviousEdge(edges[clickedEdgeIndex]) is HorizontalEdge || GetNextEdge(edges[clickedEdgeIndex]) is HorizontalEdge)
             {
                 MessageBox.Show("Nie mo¿na dodaæ dwóch ograniczeñ poziomych obok siebie");
                 return;
@@ -548,7 +542,7 @@ namespace projekt_1
             prompt.ShowDialog();
 
             // Sprawdzenie, czy wpisano poprawn¹ wartoœæ
-            if (!double.TryParse(inputBox.Text, out double newLength) || newLength<0)
+            if (!double.TryParse(inputBox.Text, out double newLength) || newLength < 0)
             {
                 MessageBox.Show("Wprowadzono niepoprawn¹ wartoœæ d³ugoœci.");
                 return;
@@ -567,7 +561,7 @@ namespace projekt_1
 
             // Oblicz now¹ pozycjê punktu koñcowego
             double angle = Math.Atan2(currentEdge.End.Y - currentEdge.Start.Y, currentEdge.End.X - currentEdge.Start.X);
-           
+
             var newEnd = new Point(
                 currentEdge.Start.X + (int)(newLength * Math.Cos(angle)),
                 currentEdge.Start.Y + (int)(newLength * Math.Sin(angle))
@@ -579,7 +573,7 @@ namespace projekt_1
 
             // Sprawdzanie dopasowania pozosta³ych krawêdzi
             bool modificationSuccess = false;
-           
+
             int currentIndex = clickedEdgeIndex;
 
             while (true)
@@ -590,9 +584,9 @@ namespace projekt_1
                 modificationSuccess = edges[currentIndex].Accept(new EdgeStartChangeVisitor(), nextEdge, delta);
 
                 // Jeœli modyfikacja zatoczy ko³o lub nie mo¿na dopasowaæ krawêdzi
-                if(modificationSuccess == false)
+                if (modificationSuccess == false)
                     break;
-                else if (modificationSuccess && (currentIndex+2)%edges.Count == clickedEdgeIndex)
+                else if (modificationSuccess && (currentIndex + 2) % edges.Count == clickedEdgeIndex)
                 {
                     MessageBox.Show("Nie mo¿na wprowadziæ ograniczenia d³ugoœci. Zmiana cofniêta.");
                     edges = originalEdges;  // Przywróæ pierwotne krawêdzie
@@ -641,6 +635,23 @@ namespace projekt_1
             return edges[nextIndex]; // Zwraca referencjê do nastêpnego elementu
         }
 
+        private void removeButton_Click(object sender, EventArgs e)
+        {
+            edges.Clear();
+            drawingComplete = false;
+            currentMousePosition = null;
+            Canvas.Invalidate();
+        }
 
+        private void normalDrawButton_Click(object sender, EventArgs e)
+        {
+            bresenhamButton.Checked = false;
+        }
+
+        private void bresenhamButton_Click(object sender, EventArgs e)
+        {
+            normalDrawButton.Checked = false;
+
+        }
     }
 }

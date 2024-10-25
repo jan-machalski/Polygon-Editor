@@ -17,17 +17,13 @@ namespace projekt_1
             End = end;
         }
 
-        public virtual void Draw(Graphics g, Pen pen)
-        {
-            g.DrawLine(pen, Start, End);
-        }
-
-        protected Point GetEdgeCenter()
+        public Point GetEdgeCenter()
         {
             // Oblicz środek krawędzi
             return new Point((Start.X + End.X) / 2, (Start.Y + End.Y) / 2);
         }
         public abstract Edge Clone();
+        public abstract void AcceptDraw(IEdgeDrawingVisitor visitor, Graphics g, Pen pen);
         public abstract bool Accept(IEdgeVisitor visitor, Edge nextEdge, Point delta);
         public abstract bool AcceptNoConstraint(IEdgeVisitor visitor, NoConstraintEdge edge, Point delta);
         public abstract bool AcceptVertical(IEdgeVisitor visitor, VerticalEdge edge, Point delta);
@@ -39,11 +35,6 @@ namespace projekt_1
     {
         public NoConstraintEdge(Point start, Point end) : base(start, end) { }
 
-        public override void Draw(Graphics g, Pen pen)
-        {
-            base.Draw(g, pen);
-            // Brak dodatkowej ikonki, bo nie ma ograniczenia
-        }
         public override Edge Clone()
         {
             return new NoConstraintEdge(Start, End);
@@ -73,22 +64,16 @@ namespace projekt_1
         {
             return visitor.Visit(currentEdge, this, delta);
         }
+        public override void AcceptDraw(IEdgeDrawingVisitor visitor, Graphics g, Pen pen)
+        {
+            visitor.DrawNoConstraintEdge(this, g, pen);
+        }
     }
 
     public class HorizontalEdge : Edge
     {
         public HorizontalEdge(Point start, Point end) : base(start, end) { }
 
-        public override void Draw(Graphics g, Pen pen)
-        {
-            base.Draw(g, pen);
-
-            // Rysuj małą poziomą linię jako ikonę, przesuniętą w dół od środka krawędzi
-            Point center = GetEdgeCenter();
-            Pen iconPen = new Pen(Color.Blue, 2); // Używamy grubszej linii dla ikonki
-            int offsetY = 10; // Przesunięcie w dół o 10 pikseli
-            g.DrawLine(iconPen, center.X - 5, center.Y + offsetY, center.X + 5, center.Y + offsetY); // Pozioma linia o długości 10 px
-        }
         public override Edge Clone()
         {
             return new HorizontalEdge(Start, End);
@@ -118,22 +103,16 @@ namespace projekt_1
         {
             return visitor.Visit(currentEdge, this, delta);
         }
+        public override void AcceptDraw(IEdgeDrawingVisitor visitor, Graphics g, Pen pen)
+        {
+            visitor.DrawHorizontalEdge(this, g, pen);
+        }
     }
 
     public class VerticalEdge : Edge
     {
         public VerticalEdge(Point start, Point end) : base(start, end) { }
 
-        public override void Draw(Graphics g, Pen pen)
-        {
-            base.Draw(g, pen);
-
-            // Rysuj małą pionową linię jako ikonę, przesuniętą w prawo od środka krawędzi
-            Point center = GetEdgeCenter();
-            Pen iconPen = new Pen(Color.Green, 2); // Używamy grubszej linii dla ikonki
-            int offsetX = 10; // Przesunięcie w prawo o 10 pikseli
-            g.DrawLine(iconPen, center.X + offsetX, center.Y - 5, center.X + offsetX, center.Y + 5); // Pionowa linia o długości 10 px
-        }
         public override Edge Clone()
         {
             return new VerticalEdge(Start, End);
@@ -168,6 +147,10 @@ namespace projekt_1
         {
             return visitor.Visit(currentEdge, this, delta);
         }
+        public override void AcceptDraw(IEdgeDrawingVisitor visitor, Graphics g, Pen pen)
+        {
+            visitor.DrawVerticalEdge(this, g, pen);
+        }
     }
 
     public class FixedLengthEdge : Edge
@@ -177,20 +160,6 @@ namespace projekt_1
         public FixedLengthEdge(Point start, Point end, double length) : base(start, end)
         {
             Length = length;
-        }
-
-        public override void Draw(Graphics g, Pen pen)
-        {
-            base.Draw(g, pen);
-
-            // Rysuj ikonę dla krawędzi o ustalonej długości, przesuniętą w dół
-            Point center = GetEdgeCenter();
-            Pen iconPen = new Pen(Color.Red, 2);
-            int offsetY = 10; // Przesunięcie w dół o 10 pikseli
-            g.DrawEllipse(iconPen, center.X - 5, center.Y + offsetY - 5, 10, 10); // Okrąg o średnicy 10 pikseli
-
-            // Wyświetl długość obok krawędzi, również z przesunięciem w dół
-            g.DrawString(Length.ToString("F1"), new Font("Arial", 8), Brushes.Black, center.X + 10, center.Y + offsetY - 10);
         }
         public override Edge Clone()
         {
@@ -220,6 +189,10 @@ namespace projekt_1
         public override bool AcceptFixedLength(IEdgeVisitor visitor, FixedLengthEdge currentEdge, Point delta)
         {
             return visitor.Visit(currentEdge, this, delta);
+        }
+        public override void AcceptDraw(IEdgeDrawingVisitor visitor, Graphics g, Pen pen)
+        {
+            visitor.DrawFixedLengthEdge(this, g, pen);
         }
     }
 
