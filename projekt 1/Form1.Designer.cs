@@ -33,6 +33,8 @@
             normalDrawButton = new RadioButton();
             bresenhamButton = new RadioButton();
             label1 = new Label();
+            controlsButton = new Button();
+            descriptionButton = new Button();
             ((System.ComponentModel.ISupportInitialize)Canvas).BeginInit();
             SuspendLayout();
             // 
@@ -98,11 +100,35 @@
             label1.TabIndex = 5;
             label1.Text = "Algorytm rysowania krawędzi";
             // 
+            // controlsButton
+            // 
+            controlsButton.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+            controlsButton.Location = new Point(820, 166);
+            controlsButton.Name = "controlsButton";
+            controlsButton.Size = new Size(150, 49);
+            controlsButton.TabIndex = 6;
+            controlsButton.Text = "Opis sterowania";
+            controlsButton.UseVisualStyleBackColor = true;
+            controlsButton.Click += controlsButton_Click;
+            // 
+            // descriptionButton
+            // 
+            descriptionButton.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+            descriptionButton.Location = new Point(820, 230);
+            descriptionButton.Name = "descriptionButton";
+            descriptionButton.Size = new Size(147, 49);
+            descriptionButton.TabIndex = 7;
+            descriptionButton.Text = "Opis działania programu";
+            descriptionButton.UseVisualStyleBackColor = true;
+            descriptionButton.Click += descriptionButton_Click;
+            // 
             // Form1
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(984, 450);
+            Controls.Add(descriptionButton);
+            Controls.Add(controlsButton);
             Controls.Add(label1);
             Controls.Add(bresenhamButton);
             Controls.Add(normalDrawButton);
@@ -122,5 +148,7 @@
         private RadioButton normalDrawButton;
         private RadioButton bresenhamButton;
         private Label label1;
+        private Button controlsButton;
+        private Button descriptionButton;
     }
 }

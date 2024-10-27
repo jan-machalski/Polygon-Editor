@@ -92,41 +92,49 @@ namespace projekt_1
         }
         public void DrawBezier(BezierEdge edge, Graphics g, Pen pen, bool bresenham)
         {
-            PointF A0 = edge.Start;
+           PointF A0 = edge.Start;
             PointF A1 = edge.ControlPoint1;
             PointF A2 = edge.ControlPoint2;
             PointF A3 = edge.End;
 
-
-            // Obliczanie liczby segmentów (może być większa dla większej dokładności)
             int segmentCount = (int)Math.Sqrt(Math.Pow(A3.X - A0.X, 2) + Math.Pow(A3.Y - A0.Y, 2));
-            float increment = 1f / segmentCount; // Krok dla t
-            float t = 0;
 
-            PointF previousPoint = A0;
+            // Ustal wartość d, będącą odwrotnością liczby segmentów
+            float d = 1f / segmentCount;
 
-            // Generowanie punktów na krzywej
-            for (int i = 1; i <= segmentCount; i++)
+            // Przyrosty deltaP, delta2P i delta3P
+            PointF deltaP = new PointF(
+                3 * (A1.X - A0.X) * d + 3 * (A2.X - 2 * A1.X + A0.X) * d * d + (A3.X - 3 * A2.X + 3 * A1.X - A0.X) * d * d * d,
+                3 * (A1.Y - A0.Y) * d + 3 * (A2.Y - 2 * A1.Y + A0.Y) * d * d + (A3.Y - 3 * A2.Y + 3 * A1.Y - A0.Y) * d * d * d
+            );
+
+            PointF delta2P = new PointF(
+                6 * (A2.X - 2 * A1.X + A0.X) * d * d + 6 * (A3.X - 3 * A2.X + 3 * A1.X - A0.X) * d * d * d,
+                6 * (A2.Y - 2 * A1.Y + A0.Y) * d * d + 6 * (A3.Y - 3 * A2.Y + 3 * A1.Y - A0.Y) * d * d * d
+            );
+
+            PointF delta3P = new PointF(
+                6 * (A3.X - 3 * A2.X + 3 * A1.X - A0.X) * d * d * d,
+                6 * (A3.Y - 3 * A2.Y + 3 * A1.Y - A0.Y) * d * d * d
+            );
+
+            // Inicjalizuj punkt początkowy
+            PointF currentPoint = A0;
+            PointF previousPoint = currentPoint;
+
+            // Rysowanie kolejnych segmentów
+            for (int i = 0; i < segmentCount; i++)
             {
-                t += increment;
+                // Oblicz kolejny punkt na krzywej
+                currentPoint = new PointF(currentPoint.X + deltaP.X, currentPoint.Y + deltaP.Y);
+                deltaP = new PointF(deltaP.X + delta2P.X, deltaP.Y + delta2P.Y);
+                delta2P = new PointF(delta2P.X + delta3P.X, delta2P.Y + delta3P.Y);
 
-                // Oblicz współrzędne punktu na krzywej Béziera
-                float oneMinusT = 1 - t;
-                PointF P = new PointF(
-                    oneMinusT * oneMinusT * oneMinusT * A0.X +
-                    3 * oneMinusT * oneMinusT * t * A1.X +
-                    3 * oneMinusT * t * t * A2.X +
-                    t * t * t * A3.X,
+                // Rysuj odcinek między poprzednim a aktualnym punktem
+                g.DrawLine(pen, previousPoint, currentPoint);
 
-                    oneMinusT * oneMinusT * oneMinusT * A0.Y +
-                    3 * oneMinusT * oneMinusT * t * A1.Y +
-                    3 * oneMinusT * t * t * A2.Y +
-                    t * t * t * A3.Y
-                );
-
-                // Rysowanie linii pomiędzy poprzednim a bieżącym punktem na krzywej
-                g.DrawLine(pen, previousPoint, P);
-                previousPoint = P;
+                // Aktualizuj poprzedni punkt
+                previousPoint = currentPoint;
             }
 
             // Rysowanie punktów kontrolnych jako brązowe kropki

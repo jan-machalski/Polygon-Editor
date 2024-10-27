@@ -61,11 +61,28 @@ namespace projekt_1
                 edge.AcceptDraw(drawingVisitor, g, edgePen, bresenham);
             }
 
+            for(int i = 0;i<edges.Count;i++)
+            {
+                if (edges[i] is BezierEdge be)
+                {
+                    string continuityInfo = be.StartContinuity.ToString();
+                    PointF textPosition = new PointF(be.Start.X + 5, be.Start.Y - 15);
+
+                    g.DrawString(continuityInfo, new Font("Arial", 8), Brushes.Black, textPosition);
+                    if (edges[(i+1)%edges.Count] is not BezierEdge)
+                    {
+                        continuityInfo = be.EndContinuity.ToString();
+                        textPosition = new PointF(be.End.X + 5, be.End.Y - 15);
+
+                        g.DrawString(continuityInfo, new Font("Arial", 8), Brushes.Black, textPosition);
+                    }
+                }
+            }
             // Rysowanie wierzcho³ków jako ma³e okrêgi
             Pen blackPen = new Pen(Color.Black);
             foreach (var edge in edges)
             {
-                g.DrawEllipse(blackPen, edge.Start.X - 5, edge.Start.Y - 5, 10, 10); // Okr¹g o œrednicy 6 pikseli
+                g.DrawEllipse(blackPen, edge.Start.X - 5, edge.Start.Y - 5, 10, 10);
             }
             if (edges.Count > 0)
             {
@@ -103,7 +120,7 @@ namespace projekt_1
                         if (edges[clickedEdgeIndex] is BezierEdge || edges[(clickedEdgeIndex + 1) % edges.Count] is BezierEdge)
                             contextMenuBezier.Show(Canvas, e.Location);
                         else
-                            contextMenu.Show(Canvas, e.Location); 
+                            contextMenu.Show(Canvas, e.Location);
                     }
                     else
                     {
@@ -120,7 +137,7 @@ namespace projekt_1
             // Obs³uguje lewy przycisk myszy
             Point clickLocationLeft = new Point(e.X, e.Y);
 
-            if (edges.Count > 0 && IsFirstEdgeClicked(clickLocationLeft))
+            if (edges.Count > 1 && IsFirstEdgeClicked(clickLocationLeft))
             {
                 // Jeœli klikniêto blisko pierwszej krawêdzi, zamykamy wielok¹t
                 drawingComplete = true;
@@ -161,8 +178,8 @@ namespace projekt_1
 
             if (edgeCopy[forwardIndex] is BezierEdge be2)
             {
-                if(be2.StartContinuity != BezierEdge.ContinuityType.G0)
-                    be2.ControlPoint1 = new Point(be2.ControlPoint1.X+delta.X,be2.ControlPoint1.Y+delta.Y);
+                if (be2.StartContinuity != BezierEdge.ContinuityType.G0)
+                    be2.ControlPoint1 = new Point(be2.ControlPoint1.X + delta.X, be2.ControlPoint1.Y + delta.Y);
             }
             else
             {
@@ -189,8 +206,8 @@ namespace projekt_1
             }
             if (edgeCopy[backwardIndex] is BezierEdge be3)
             {
-                if(be3.EndContinuity != BezierEdge.ContinuityType.G0 )
-                    be3.ControlPoint2 = new Point(be3.ControlPoint2.X+delta.X,be3.ControlPoint2.Y+delta.Y);
+                if (be3.EndContinuity != BezierEdge.ContinuityType.G0)
+                    be3.ControlPoint2 = new Point(be3.ControlPoint2.X + delta.X, be3.ControlPoint2.Y + delta.Y);
             }
             else
             {
@@ -234,39 +251,26 @@ namespace projekt_1
                 {
                     edges[i] = edgeCopy[i].Clone();
                 }
-                for (int i = 0; i < edges.Count; i++)
-                {
-                    if (edges[i] is BezierEdge be)
-                    {
-                        if (be.StartContinuity == BezierEdge.ContinuityType.G1)
-                            SetG1((i + edges.Count - 1) % edges.Count);
-                        else if(be.StartContinuity == BezierEdge.ContinuityType.C1)
-                            SetC1((i + edges.Count - 1) % edges.Count);
-                        if (be.EndContinuity == BezierEdge.ContinuityType.G1)
-                            SetG1(i);
-                        else if (be.EndContinuity == BezierEdge.ContinuityType.C1)
-                            SetC1(i);
-                    }
-                }
+                UpdateContinuity();
             }
 
         }
         private void UpdateWithCP1(int idx, Point delta)
         {
             BezierEdge be = (BezierEdge)edges[idx];
-            if (edges[(idx-1+edges.Count)%edges.Count] is BezierEdge be2)
+            if (edges[(idx - 1 + edges.Count) % edges.Count] is BezierEdge be2)
             {
                 if (be2.EndContinuity == BezierEdge.ContinuityType.C1)
                 {
-                    be.ControlPoint1 = new Point(be.ControlPoint1.X+delta.X, be.ControlPoint1.Y+delta.Y);
+                    be.ControlPoint1 = new Point(be.ControlPoint1.X + delta.X, be.ControlPoint1.Y + delta.Y);
                     be2.ControlPoint2 = new Point(be2.ControlPoint2.X - delta.X, be2.ControlPoint2.Y - delta.Y);
                 }
                 else if (be2.EndContinuity == BezierEdge.ContinuityType.G1)
                 {
                     be.ControlPoint1 = new Point(be.ControlPoint1.X + delta.X, be.ControlPoint1.Y + delta.Y);
-                    float originalDistance = (float)Math.Sqrt(Math.Pow(be2.ControlPoint2.X - be2.End.X,2)+Math.Pow(be2.ControlPoint2.Y - be2.End.Y,2));
+                    float originalDistance = (float)Math.Sqrt(Math.Pow(be2.ControlPoint2.X - be2.End.X, 2) + Math.Pow(be2.ControlPoint2.Y - be2.End.Y, 2));
                     float edgeLength = (float)Math.Sqrt(Math.Pow(be.ControlPoint1.X - be.Start.X, 2) + Math.Pow(be.ControlPoint1.Y - be.Start.Y, 2));
-                    if (edgeLength != 0) 
+                    if (edgeLength != 0)
                     {
                         PointF direction = new PointF(
                             (be.ControlPoint1.X - be.Start.X) / edgeLength,
@@ -283,7 +287,7 @@ namespace projekt_1
             else
             {
                 be.ControlPoint1 = new Point(be.ControlPoint1.X + delta.X, be.ControlPoint1.Y + delta.Y);
-                
+
                 EdgeEndChangeVisitor backwardVisitor = new EdgeEndChangeVisitor();
                 if (be.StartContinuity == BezierEdge.ContinuityType.G0)
                     return;
@@ -291,7 +295,7 @@ namespace projekt_1
                 int backwardIndex = (idx - 1 + edges.Count) % edges.Count;
                 bool backwardSuccess = true;
 
-                if (edges[backwardIndex] is HorizontalEdge || edges[backwardIndex] is VerticalEdge)
+                if (edges[backwardIndex] is HorizontalEdge || edges[backwardIndex] is VerticalEdge || (edges[backwardIndex] is FixedLengthEdge && be.StartContinuity == BezierEdge.ContinuityType.C1))
                 {
                     be.Start = new Point(be.Start.X + delta.X, be.Start.Y + delta.Y);
                     edges[backwardIndex].End = new Point(edges[backwardIndex].End.X + delta.X, edges[backwardIndex].End.Y + delta.Y);
@@ -324,15 +328,15 @@ namespace projekt_1
                             Point newStart = new Point(
                                 (int)Math.Round(backwardEdge.End.X + direction.X * backwardEdgeLength),
                                 (int)Math.Round(backwardEdge.End.Y + direction.Y * backwardEdgeLength));
-                            delta = new Point(newStart.X - previousStart.X,newStart.Y-previousStart.Y);
+                            delta = new Point(newStart.X - previousStart.X, newStart.Y - previousStart.Y);
                         }
                     }
                 }
-                
+
                 edges[backwardIndex].Start = new Point(edges[backwardIndex].Start.X + delta.X, edges[backwardIndex].Start.Y + delta.Y);
                 backwardIndex = (backwardIndex + edges.Count - 1) % edges.Count;
                 edges[backwardIndex].End = new Point(edges[backwardIndex].End.X + delta.X, edges[backwardIndex].End.Y + delta.Y);
-                while(backwardSuccess)
+                while (backwardSuccess)
                 {
                     var currentEdge = edges[backwardIndex];
                     var prevEdge = edges[(backwardIndex + edges.Count - 1) % edges.Count];
@@ -341,20 +345,7 @@ namespace projekt_1
 
                     backwardIndex = (backwardIndex + edges.Count - 1) % edges.Count;
                 }
-                for (int i = 0; i < edges.Count; i++)
-                {
-                    if (edges[i] is BezierEdge be3)
-                    {
-                        if (be3.StartContinuity == BezierEdge.ContinuityType.G1)
-                            SetG1((i + edges.Count - 1) % edges.Count);
-                        else if (be3.StartContinuity == BezierEdge.ContinuityType.C1)
-                            SetC1((i + edges.Count - 1) % edges.Count);
-                        if (be3.EndContinuity == BezierEdge.ContinuityType.G1)
-                            SetG1(i);
-                        else if (be3.EndContinuity == BezierEdge.ContinuityType.C1)
-                            SetC1(i);
-                    }
-                }
+                UpdateContinuity();
             }
         }
         private void UpdateWithCP2(int idx, Point delta)
@@ -397,7 +388,7 @@ namespace projekt_1
                 int forwardIndex = (idx + 1) % edges.Count;
                 bool forwardSuccess = true;
 
-                if (edges[forwardIndex] is HorizontalEdge || edges[forwardIndex] is VerticalEdge)
+                if (edges[forwardIndex] is HorizontalEdge || edges[forwardIndex] is VerticalEdge || (edges[forwardIndex] is FixedLengthEdge && be.EndContinuity == BezierEdge.ContinuityType.C1))
                 {
                     be.End = new Point(be.End.X + delta.X, be.End.Y + delta.Y);
 
@@ -405,7 +396,7 @@ namespace projekt_1
                 }
                 else
                 {
-                    if(be.EndContinuity == BezierEdge.ContinuityType.C1)
+                    if (be.EndContinuity == BezierEdge.ContinuityType.C1)
                     {
                         delta.X = -delta.X;
                         delta.Y = -delta.Y;
@@ -420,7 +411,7 @@ namespace projekt_1
                             be.End.X - be.ControlPoint2.X,
                             be.End.Y - be.ControlPoint2.Y);
                         float directionLength = (float)Math.Sqrt(direction.X * direction.X + direction.Y * direction.Y);
-                        if (directionLength != 0) 
+                        if (directionLength != 0)
                         {
                             direction = new PointF(
                                 direction.X / directionLength,
@@ -449,20 +440,7 @@ namespace projekt_1
 
                     forwardIndex = (forwardIndex + edges.Count - 1) % edges.Count;
                 }
-                for (int i = 0; i < edges.Count; i++)
-                {
-                    if (edges[i] is BezierEdge be3)
-                    {
-                        if (be3.StartContinuity == BezierEdge.ContinuityType.G1)
-                            SetG1((i + edges.Count - 1) % edges.Count);
-                        else if (be3.StartContinuity == BezierEdge.ContinuityType.C1)
-                            SetC1((i + edges.Count - 1) % edges.Count);
-                        if (be3.EndContinuity == BezierEdge.ContinuityType.G1)
-                            SetG1(i);
-                        else if (be3.EndContinuity == BezierEdge.ContinuityType.C1)
-                            SetC1(i);
-                    }
-                }
+                UpdateContinuity();
             }
         }
 
@@ -487,7 +465,7 @@ namespace projekt_1
                                 currentMouseLocation.Y - be.ControlPoint1.Y);
                     UpdateWithCP1(draggedCP1, d);
                 }
-                else if(draggedCP2 != -1)
+                else if (draggedCP2 != -1)
                 {
                     BezierEdge be = (BezierEdge)edges[draggedCP2];
                     Point d = new Point(currentMouseLocation.X - be.ControlPoint2.X,
@@ -726,7 +704,7 @@ namespace projekt_1
             {
                 Point clickLocation = new Point(e.X, e.Y);
 
-                
+
 
                 draggedVertexIndex = FindNearestVertex(clickLocation);
                 draggedCP1 = draggedCP2 = -1;
@@ -741,7 +719,7 @@ namespace projekt_1
                                 draggedCP1 = i;
                                 break;
                             }
-                            if(Distance(clickLocation, be.ControlPoint2)<10)
+                            if (Distance(clickLocation, be.ControlPoint2) < 10)
                             {
                                 draggedCP2 = i;
                                 break;
@@ -749,7 +727,7 @@ namespace projekt_1
                         }
                     }
                 }
-                if(draggedVertexIndex != -1 || draggedCP1 != -1 || draggedCP2 != -1)
+                if (draggedVertexIndex != -1 || draggedCP1 != -1 || draggedCP2 != -1)
                 {
                     isDraggingVertex = true;
                 }
@@ -815,7 +793,7 @@ namespace projekt_1
                 if (currentIndex == clickedEdgeIndex)
                     break;
             }
-
+            UpdateContinuity();
             Canvas.Invalidate();
 
         }
@@ -870,7 +848,7 @@ namespace projekt_1
                 if (currentIndex == clickedEdgeIndex)
                     break;
             }
-
+            UpdateContinuity();
             Canvas.Invalidate();
         }
         private void AddFixedLengthConstraint_Click(object sender, EventArgs e)
@@ -896,10 +874,24 @@ namespace projekt_1
             prompt.Controls.Add(inputBox);
             prompt.Controls.Add(confirmation);
 
-            confirmation.Click += (s, ev) => { prompt.Close(); };
-            inputBox.KeyDown += (s, ev) => { if (ev.KeyCode == Keys.Enter) prompt.Close(); };
+            confirmation.Click += (s, ev) =>
+            {
+                prompt.DialogResult = DialogResult.OK;
+                prompt.Close();
+            };
 
-            prompt.ShowDialog();
+            // Obs³uga naciœniêcia klawisza Enter
+            inputBox.KeyDown += (s, ev) =>
+            {
+                if (ev.KeyCode == Keys.Enter)
+                {
+                    prompt.DialogResult = DialogResult.OK;
+                    prompt.Close();
+                }
+            };
+
+            if (prompt.ShowDialog() != DialogResult.OK)
+                return;
 
             // Sprawdzenie, czy wpisano poprawn¹ wartoœæ
             if (!double.TryParse(inputBox.Text, out double newLength) || newLength < 0)
@@ -912,6 +904,7 @@ namespace projekt_1
             if (Math.Abs(newLength - currentLength) < 0.2)
             {
                 edges[clickedEdgeIndex] = new FixedLengthEdge(currentEdge.Start, currentEdge.End, newLength);
+                UpdateContinuity();
                 Canvas.Invalidate();
                 return;
             }
@@ -965,8 +958,26 @@ namespace projekt_1
                 if (currentIndex == clickedEdgeIndex)
                     break;
             }
+            UpdateContinuity();
 
             Canvas.Invalidate();
+        }
+        public void UpdateContinuity()
+        {
+            for (int i = 0; i < edges.Count; i++)
+            {
+                if (edges[i] is BezierEdge be3)
+                {
+                    if (be3.StartContinuity == BezierEdge.ContinuityType.G1)
+                        SetG1((i + edges.Count - 1) % edges.Count);
+                    else if (be3.StartContinuity == BezierEdge.ContinuityType.C1)
+                        SetC1((i + edges.Count - 1) % edges.Count);
+                    if (be3.EndContinuity == BezierEdge.ContinuityType.G1)
+                        SetG1(i);
+                    else if (be3.EndContinuity == BezierEdge.ContinuityType.C1)
+                        SetC1(i);
+                }
+            }
         }
         public void AddBezierEdgeConstraint_Click(object sender, EventArgs e)
         {
@@ -979,6 +990,7 @@ namespace projekt_1
                 be.EndContinuity = BezierEdge.ContinuityType.G0;
             if (edges[(clickedEdgeIndex + 1) % edges.Count] is BezierEdge be2)
                 be2.StartContinuity = BezierEdge.ContinuityType.G0;
+            Canvas.Invalidate();
         }
         public void SetG1_Click(object sender, EventArgs e)
         {
@@ -1115,6 +1127,46 @@ namespace projekt_1
         {
             normalDrawButton.Checked = false;
 
+        }
+
+        private void controlsButton_Click(object sender, EventArgs e)
+        {
+            string controlsDescription =
+                @"
+Sterowanie programem:
+
+-Zacznij rysowanie: Kliknij lewym przyciskiem na puste pole do rysowania.
+-Zakoñcz rysowanie: Podczas rysowania kliknij na pierwszy narysowany wierzcho³ek.
+-Przesuñ wierzcho³ek/punkt kontrolny: przytrzymaj lewy przycisk myszy i przesuñ kursor.
+-Dodaj ograniczenie pionowe poziome: naciœnij prawym plawiszem myszy na krawêdŸ i kliknij w wybran¹ opcjê.
+-Dodaj ograniczenie d³ugoœci naciœnij prawym przyciskiem myszy na krawêdŸ, wybierz opcjê ograniczenie d³ugoœci i w okienku które siê pojawi wybierz d³ugoœæ krawêdzi.
+-Usuñ ograniczenie: naciœnij prawym plawiszem myszy na krawêdŸ i kliknij w opcjê usuñ ograniczenie
+-Przesuñ ca³¹ figurê przytrzymaj lewy przycisk myszy wewn¹trz figury i przesuñ kursor.
+-Dodaj wierzcho³ek: kliknij prawym przyciskiem myszy na krawêdŸ i wybierz opcjê dodaj wierzcho³ek.
+-Ustaw krzyw¹ Beziera - kliknij prawym przyciskiem myszy i wybierz opcjê. Nowa krzywa bêdzie mia³¹ w punktach koñcowych ci¹g³oœæ C1
+-Zmieñ ci¹g³oœæ punktu - kliknij prawym przyciskiem myszy w punkt granicz¹cy z krzyw¹ Beziera i wybierz ci¹g³oœæ.";
+
+            MessageBox.Show(controlsDescription, "Opis sterowania", MessageBoxButtons.OK, MessageBoxIcon.Information);
+        }
+
+        private void descriptionButton_Click(object sender, EventArgs e)
+        {
+            string programDescription =
+                @"
+Opis dzia³ania programu:
+
+-Krawêdzie o poszczególnych ograniczeniach s¹ przechowywane na liœcie edges jako obiekty klas dziedzicz¹cych po abstrakcyjnej klasie Edge.
+-Rysowanie odbywa siê na podstawie informacji zawartych w elementach listy edges i jest za nie odpowiedzialna klasa EdgeDrawingVisitor.
+-Krótki opis dzia³ania algorytmu relacji:
+    1. Zmieniamy pozycjê chwyconego wierzcho³ka zgodnie z pozycj¹ myszy
+    2. Idziemy w pêtli w obie strony listy sprawdzaj¹c obecn¹ i nastêpn¹ krawêdŸ
+    3. Do rozpatrzenia poszczególnych przypadków zosta³ wykorzystany Interfejs IEdgeDrawingVisitor i dwie klasy które po nim dziedzicz¹.
+    4. Metoda aktualizuj¹ca pozycjê krawêdzi zak³ada ¿e zosta³ przesuniêty pierwszy punkt pierwszej krawêdzi. Stara siê dobraæ pozycjê punktu ³¹cz¹cego sprawdzane krawêdzie w taki sposób ¿eby nie poruszyæ drugiego punktu drugiej krawêdzi.
+    5. Jeœli to siê uda zwraca informacjê o tym ¿e nie trzeba dalej przesuwaæ (w postaci zmiennej bool), jeœli nie przesuwa punkt ³¹cz¹cy o tyle samo i ile przesun¹³ siê punkt startowy i przesuwa indeks o jeden dalej oraz zwraca odpowiedni¹ informacjê.
+    6. Jeœli zabraknie dla indeksów miejsca ca³a figura jest przesuwana za kursorem bez zmian w po³o¿eniu krawêdzi wzglêdem siebie.
+-Dla krzywych beziera sprawdzanie dzia³a podobnie. Sprawdzana jest dodatkowo ci¹g³oœæ w punktach"
+;
+            MessageBox.Show(programDescription, "Opis zastosowanych rozwi¹zañ", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
     }
 }
