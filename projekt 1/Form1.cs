@@ -375,7 +375,7 @@ namespace projekt_1
                     }
                 }
                 else
-                    be.ControlPoint1 = new Point(be.ControlPoint2.X + delta.X, be.ControlPoint2.Y + delta.Y);
+                    be.ControlPoint2 = new Point(be.ControlPoint2.X + delta.X, be.ControlPoint2.Y + delta.Y);
             }
             else
             {
@@ -743,6 +743,7 @@ namespace projekt_1
         private void DeleteConstraint_Click(object sender, EventArgs e)
         {
             edges[clickedEdgeIndex] = new NoConstraintEdge(edges[clickedEdgeIndex].Start, edges[clickedEdgeIndex].End);
+            UpdateContinuity();
             Canvas.Invalidate();
         }
         private void AddHorizontalConstraint_Click(object sender, EventArgs e)

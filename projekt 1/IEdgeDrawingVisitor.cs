@@ -152,6 +152,7 @@ namespace projekt_1
             g.DrawLine(dashedPen, A0, A1); // Linia start -> pierwszy punkt kontrolny
             g.DrawLine(dashedPen, A1, A2); // Linia pierwszy -> drugi punkt kontrolny
             g.DrawLine(dashedPen, A2, A3); // Linia drugi punkt kontrolny -> end
+            g.DrawLine(dashedPen, A3, A0);
 
             // Cleanup
             brush.Dispose();
