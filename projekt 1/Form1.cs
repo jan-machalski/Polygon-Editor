@@ -9,10 +9,13 @@ namespace projekt_1
         private Point? currentMousePosition = null;
         private ContextMenuStrip contextMenu = new ContextMenuStrip();
         private ContextMenuStrip contextMenuEdge = new ContextMenuStrip();
+        private ContextMenuStrip contextMenuBezier = new ContextMenuStrip();
         private int clickedEdgeIndex = -1;
         private bool isDragging = false;
         private bool isDraggingVertex = false;
         private int draggedVertexIndex = -1;
+        private int draggedCP1 = -1;
+        private int draggedCP2 = -1;
         private Point dragStartPoint;
         private Point polygonOffset = Point.Empty;
         public Form1()
@@ -28,6 +31,10 @@ namespace projekt_1
             contextMenuEdge.Items.Add("Dodaj ograniczenie d³ugoœci", null, AddFixedLengthConstraint_Click);
             contextMenuEdge.Items.Add("Ustaw krzyw¹ Beziera", null, AddBezierEdgeConstraint_Click);
             contextMenuEdge.Items.Add("Usuñ ograniczenie", null, DeleteConstraint_Click);
+            contextMenuBezier.Items.Add("Ustaw ci¹g³oœæ G0", null, SetG0_Click);
+            contextMenuBezier.Items.Add("Ustaw ci¹g³oœæ G1", null, SetG1_Click);
+            contextMenuBezier.Items.Add("Ustaw ci¹g³oœæ C1", null, SetC1_Click);
+            contextMenuBezier.Items.Add("Usuñ wierzcho³ek", null, DeleteVertex_Click);
             deleteItem.Click += DeleteVertex_Click;
             contextMenu.Items.Add(deleteItem);
         }
@@ -93,7 +100,10 @@ namespace projekt_1
 
                     if (clickedEdgeIndex != -1)
                     {
-                        contextMenu.Show(Canvas, e.Location); // Wyœwietl menu kontekstowe
+                        if (edges[clickedEdgeIndex] is BezierEdge || edges[(clickedEdgeIndex + 1) % edges.Count] is BezierEdge)
+                            contextMenuBezier.Show(Canvas, e.Location);
+                        else
+                            contextMenu.Show(Canvas, e.Location); 
                     }
                     else
                     {
@@ -149,48 +159,60 @@ namespace projekt_1
                 modifiedEdgesCount = 1;
             edgeCopy[forwardIndex].Start = edgeCopy[backwardIndex].End = new Point(edges[forwardIndex].Start.X + delta.X, edges[forwardIndex].Start.Y + delta.Y);
 
-
-            for (int i = 0; i < edges.Count && forwardSuccess; i++)
+            if (edgeCopy[forwardIndex] is BezierEdge be2)
             {
-                var currentEdge = edgeCopy[forwardIndex];
-                var nextEdge = edgeCopy[(forwardIndex + 1) % edgeCopy.Count];
-
-                forwardSuccess = currentEdge.Accept(forwardVisitor, nextEdge, delta);
-
-                modifiedEdgesCount++;
-
-                if (forwardSuccess == false)
-                    break;
-
-
-                if ((forwardIndex + 1) % edges.Count == draggedVertexIndex)
-                {
-                    break;
-                }
-
-                forwardIndex = (forwardIndex + 1) % edges.Count;
+                if(be2.StartContinuity != BezierEdge.ContinuityType.G0)
+                    be2.ControlPoint1 = new Point(be2.ControlPoint1.X+delta.X,be2.ControlPoint1.Y+delta.Y);
             }
-            for (int i = 0; i < edges.Count && backwardSuccess; i++)
+            else
             {
-                var currentEdge = edgeCopy[backwardIndex];
-                var prevEdge = edgeCopy[(backwardIndex + edges.Count - 1) % edgeCopy.Count];
-
-                backwardSuccess = currentEdge.Accept(backwardVisitor, prevEdge, delta);
-
-                modifiedEdgesCount++;
-
-                if (backwardSuccess == false)
-                    break;
-
-
-
-
-                if ((backwardIndex + edges.Count - 1) % edges.Count == draggedVertexIndex)
+                for (int i = 0; i < edges.Count && forwardSuccess; i++)
                 {
-                    break;
-                }
+                    var currentEdge = edgeCopy[forwardIndex];
+                    var nextEdge = edgeCopy[(forwardIndex + 1) % edgeCopy.Count];
 
-                backwardIndex = (backwardIndex + edges.Count - 1) % edges.Count;
+                    forwardSuccess = currentEdge.Accept(forwardVisitor, nextEdge, delta);
+
+                    modifiedEdgesCount++;
+
+                    if (forwardSuccess == false)
+                        break;
+
+
+                    if ((forwardIndex + 1) % edges.Count == draggedVertexIndex)
+                    {
+                        break;
+                    }
+
+                    forwardIndex = (forwardIndex + 1) % edges.Count;
+                }
+            }
+            if (edgeCopy[backwardIndex] is BezierEdge be3)
+            {
+                if(be3.EndContinuity != BezierEdge.ContinuityType.G0 )
+                    be3.ControlPoint2 = new Point(be3.ControlPoint2.X+delta.X,be3.ControlPoint2.Y+delta.Y);
+            }
+            else
+            {
+                for (int i = 0; i < edges.Count && backwardSuccess; i++)
+                {
+                    var currentEdge = edgeCopy[backwardIndex];
+                    var prevEdge = edgeCopy[(backwardIndex + edges.Count - 1) % edgeCopy.Count];
+
+                    backwardSuccess = currentEdge.Accept(backwardVisitor, prevEdge, delta);
+
+                    modifiedEdgesCount++;
+
+                    if (backwardSuccess == false)
+                        break;
+
+                    if ((backwardIndex + edges.Count - 1) % edges.Count == draggedVertexIndex)
+                    {
+                        break;
+                    }
+
+                    backwardIndex = (backwardIndex + edges.Count - 1) % edges.Count;
+                }
             }
 
             if (modifiedEdgesCount > edges.Count)
@@ -214,17 +236,234 @@ namespace projekt_1
                 }
                 for (int i = 0; i < edges.Count; i++)
                 {
-                    if (edges[i] is not BezierEdge && edges[(i + 1) % edges.Count] is BezierEdge be)
+                    if (edges[i] is BezierEdge be)
                     {
-                        edges[i].Accept(new EdgeStartChangeVisitor(), be, new Point());
-                    }
-                    if (edges[i] is not BezierEdge && edges[(i + edges.Count - 1) % edges.Count] is BezierEdge be2)
-                    {
-                        edges[i].Accept(new EdgeEndChangeVisitor(), be2, new Point());
+                        if (be.StartContinuity == BezierEdge.ContinuityType.G1)
+                            SetG1((i + edges.Count - 1) % edges.Count);
+                        else if(be.StartContinuity == BezierEdge.ContinuityType.C1)
+                            SetC1((i + edges.Count - 1) % edges.Count);
+                        if (be.EndContinuity == BezierEdge.ContinuityType.G1)
+                            SetG1(i);
+                        else if (be.EndContinuity == BezierEdge.ContinuityType.C1)
+                            SetC1(i);
                     }
                 }
             }
 
+        }
+        private void UpdateWithCP1(int idx, Point delta)
+        {
+            BezierEdge be = (BezierEdge)edges[idx];
+            if (edges[(idx-1+edges.Count)%edges.Count] is BezierEdge be2)
+            {
+                if (be2.EndContinuity == BezierEdge.ContinuityType.C1)
+                {
+                    be.ControlPoint1 = new Point(be.ControlPoint1.X+delta.X, be.ControlPoint1.Y+delta.Y);
+                    be2.ControlPoint2 = new Point(be2.ControlPoint2.X - delta.X, be2.ControlPoint2.Y - delta.Y);
+                }
+                else if (be2.EndContinuity == BezierEdge.ContinuityType.G1)
+                {
+                    be.ControlPoint1 = new Point(be.ControlPoint1.X + delta.X, be.ControlPoint1.Y + delta.Y);
+                    float originalDistance = (float)Math.Sqrt(Math.Pow(be2.ControlPoint2.X - be2.End.X,2)+Math.Pow(be2.ControlPoint2.Y - be2.End.Y,2));
+                    float edgeLength = (float)Math.Sqrt(Math.Pow(be.ControlPoint1.X - be.Start.X, 2) + Math.Pow(be.ControlPoint1.Y - be.Start.Y, 2));
+                    if (edgeLength != 0) 
+                    {
+                        PointF direction = new PointF(
+                            (be.ControlPoint1.X - be.Start.X) / edgeLength,
+                            (be.ControlPoint1.Y - be.Start.Y) / edgeLength);
+
+                        be2.ControlPoint2 = new Point(
+                            (int)Math.Round(be2.End.X - direction.X * originalDistance),
+                            (int)Math.Round(be2.End.Y - direction.Y * originalDistance));
+                    }
+                }
+                else
+                    be.ControlPoint1 = new Point(be.ControlPoint1.X + delta.X, be.ControlPoint1.Y + delta.Y);
+            }
+            else
+            {
+                be.ControlPoint1 = new Point(be.ControlPoint1.X + delta.X, be.ControlPoint1.Y + delta.Y);
+                
+                EdgeEndChangeVisitor backwardVisitor = new EdgeEndChangeVisitor();
+                if (be.StartContinuity == BezierEdge.ContinuityType.G0)
+                    return;
+
+                int backwardIndex = (idx - 1 + edges.Count) % edges.Count;
+                bool backwardSuccess = true;
+
+                if (edges[backwardIndex] is HorizontalEdge || edges[backwardIndex] is VerticalEdge)
+                {
+                    be.Start = new Point(be.Start.X + delta.X, be.Start.Y + delta.Y);
+                    edges[backwardIndex].End = new Point(edges[backwardIndex].End.X + delta.X, edges[backwardIndex].End.Y + delta.Y);
+                }
+                else
+                {
+                    if (be.StartContinuity == BezierEdge.ContinuityType.C1)
+                    {
+                        delta.X = -delta.X;
+                        delta.Y = -delta.Y;
+                    }
+                    else
+                    {
+                        Edge backwardEdge = edges[backwardIndex];
+                        float backwardEdgeLength = (float)Math.Sqrt(
+                           Math.Pow(backwardEdge.End.X - backwardEdge.Start.X, 2) +
+                           Math.Pow(backwardEdge.End.Y - backwardEdge.Start.Y, 2));
+                        PointF direction = new PointF(
+                            be.Start.X - be.ControlPoint1.X,
+                            be.Start.Y - be.ControlPoint1.Y);
+                        float directionLength = (float)Math.Sqrt(direction.X * direction.X + direction.Y * direction.Y);
+                        if (directionLength != 0)
+                        {
+                            direction = new PointF(
+                                direction.X / directionLength,
+                                direction.Y / directionLength);
+
+                            Point previousStart = backwardEdge.Start;
+
+                            Point newStart = new Point(
+                                (int)Math.Round(backwardEdge.End.X + direction.X * backwardEdgeLength),
+                                (int)Math.Round(backwardEdge.End.Y + direction.Y * backwardEdgeLength));
+                            delta = new Point(newStart.X - previousStart.X,newStart.Y-previousStart.Y);
+                        }
+                    }
+                }
+                
+                edges[backwardIndex].Start = new Point(edges[backwardIndex].Start.X + delta.X, edges[backwardIndex].Start.Y + delta.Y);
+                backwardIndex = (backwardIndex + edges.Count - 1) % edges.Count;
+                edges[backwardIndex].End = new Point(edges[backwardIndex].End.X + delta.X, edges[backwardIndex].End.Y + delta.Y);
+                while(backwardSuccess)
+                {
+                    var currentEdge = edges[backwardIndex];
+                    var prevEdge = edges[(backwardIndex + edges.Count - 1) % edges.Count];
+
+                    backwardSuccess = currentEdge.Accept(backwardVisitor, prevEdge, delta);
+
+                    backwardIndex = (backwardIndex + edges.Count - 1) % edges.Count;
+                }
+                for (int i = 0; i < edges.Count; i++)
+                {
+                    if (edges[i] is BezierEdge be3)
+                    {
+                        if (be3.StartContinuity == BezierEdge.ContinuityType.G1)
+                            SetG1((i + edges.Count - 1) % edges.Count);
+                        else if (be3.StartContinuity == BezierEdge.ContinuityType.C1)
+                            SetC1((i + edges.Count - 1) % edges.Count);
+                        if (be3.EndContinuity == BezierEdge.ContinuityType.G1)
+                            SetG1(i);
+                        else if (be3.EndContinuity == BezierEdge.ContinuityType.C1)
+                            SetC1(i);
+                    }
+                }
+            }
+        }
+        private void UpdateWithCP2(int idx, Point delta)
+        {
+            BezierEdge be = (BezierEdge)edges[idx];
+            if (edges[(idx + 1) % edges.Count] is BezierEdge be2)
+            {
+                if (be2.StartContinuity == BezierEdge.ContinuityType.C1)
+                {
+                    be.ControlPoint2 = new Point(be.ControlPoint2.X + delta.X, be.ControlPoint2.Y + delta.Y);
+                    be2.ControlPoint1 = new Point(be2.ControlPoint1.X - delta.X, be2.ControlPoint1.Y - delta.Y);
+                }
+                else if (be2.StartContinuity == BezierEdge.ContinuityType.G1)
+                {
+                    be.ControlPoint2 = new Point(be.ControlPoint2.X + delta.X, be.ControlPoint2.Y + delta.Y);
+                    float originalDistance = (float)Math.Sqrt(Math.Pow(be2.ControlPoint1.X - be2.Start.X, 2) + Math.Pow(be2.ControlPoint1.Y - be2.Start.Y, 2));
+                    float edgeLength = (float)Math.Sqrt(Math.Pow(be.ControlPoint2.X - be.End.X, 2) + Math.Pow(be.ControlPoint2.Y - be.End.Y, 2));
+                    if (edgeLength != 0)
+                    {
+                        PointF direction = new PointF(
+                            (be.ControlPoint2.X - be.End.X) / edgeLength,
+                            (be.ControlPoint2.Y - be.End.Y) / edgeLength);
+
+                        be2.ControlPoint1 = new Point(
+                            (int)Math.Round(be2.Start.X - direction.X * originalDistance),
+                            (int)Math.Round(be2.Start.Y - direction.Y * originalDistance));
+                    }
+                }
+                else
+                    be.ControlPoint1 = new Point(be.ControlPoint2.X + delta.X, be.ControlPoint2.Y + delta.Y);
+            }
+            else
+            {
+                be.ControlPoint2 = new Point(be.ControlPoint2.X + delta.X, be.ControlPoint2.Y + delta.Y);
+
+                EdgeStartChangeVisitor backwardVisitor = new EdgeStartChangeVisitor();
+                if (be.EndContinuity == BezierEdge.ContinuityType.G0)
+                    return;
+
+                int forwardIndex = (idx + 1) % edges.Count;
+                bool forwardSuccess = true;
+
+                if (edges[forwardIndex] is HorizontalEdge || edges[forwardIndex] is VerticalEdge)
+                {
+                    be.End = new Point(be.End.X + delta.X, be.End.Y + delta.Y);
+
+                    edges[forwardIndex].Start = new Point(edges[forwardIndex].Start.X + delta.X, edges[forwardIndex].Start.Y + delta.Y);
+                }
+                else
+                {
+                    if(be.EndContinuity == BezierEdge.ContinuityType.C1)
+                    {
+                        delta.X = -delta.X;
+                        delta.Y = -delta.Y;
+                    }
+                    else
+                    {
+                        Edge forwardEdge = edges[forwardIndex];
+                        float forwardEdgeLength = (float)Math.Sqrt(
+                           Math.Pow(forwardEdge.End.X - forwardEdge.Start.X, 2) +
+                           Math.Pow(forwardEdge.End.Y - forwardEdge.Start.Y, 2));
+                        PointF direction = new PointF(
+                            be.End.X - be.ControlPoint2.X,
+                            be.End.Y - be.ControlPoint2.Y);
+                        float directionLength = (float)Math.Sqrt(direction.X * direction.X + direction.Y * direction.Y);
+                        if (directionLength != 0) 
+                        {
+                            direction = new PointF(
+                                direction.X / directionLength,
+                                direction.Y / directionLength);
+
+                            Point previousEnd = forwardEdge.End;
+
+                            Point newEnd = new Point(
+                                (int)Math.Round(forwardEdge.Start.X + direction.X * forwardEdgeLength),
+                                (int)Math.Round(forwardEdge.Start.Y + direction.Y * forwardEdgeLength));
+                            delta = new Point(
+                                newEnd.X - previousEnd.X,
+                                newEnd.Y - previousEnd.Y);
+                        }
+                    }
+                }
+                edges[forwardIndex].End = new Point(edges[forwardIndex].End.X + delta.X, edges[forwardIndex].End.Y + delta.Y);
+                forwardIndex = (forwardIndex + 1) % edges.Count;
+                edges[forwardIndex].Start = new Point(edges[forwardIndex].Start.X + delta.X, edges[forwardIndex].Start.Y + delta.Y);
+                while (forwardSuccess)
+                {
+                    var currentEdge = edges[forwardIndex];
+                    var nextEdge = edges[(forwardIndex + 1) % edges.Count];
+
+                    forwardSuccess = currentEdge.Accept(backwardVisitor, nextEdge, delta);
+
+                    forwardIndex = (forwardIndex + edges.Count - 1) % edges.Count;
+                }
+                for (int i = 0; i < edges.Count; i++)
+                {
+                    if (edges[i] is BezierEdge be3)
+                    {
+                        if (be3.StartContinuity == BezierEdge.ContinuityType.G1)
+                            SetG1((i + edges.Count - 1) % edges.Count);
+                        else if (be3.StartContinuity == BezierEdge.ContinuityType.C1)
+                            SetC1((i + edges.Count - 1) % edges.Count);
+                        if (be3.EndContinuity == BezierEdge.ContinuityType.G1)
+                            SetG1(i);
+                        else if (be3.EndContinuity == BezierEdge.ContinuityType.C1)
+                            SetC1(i);
+                    }
+                }
+            }
         }
 
         private void Canvas_MouseMove(object sender, MouseEventArgs e)
@@ -241,10 +480,27 @@ namespace projekt_1
             if (isDraggingVertex)
             {
                 Point currentMouseLocation = new Point(e.X, e.Y);
-                Point delta = new Point(currentMouseLocation.X - edges[draggedVertexIndex].End.X,
-                                currentMouseLocation.Y - edges[draggedVertexIndex].End.Y);
+                if (draggedCP1 != -1)
+                {
+                    BezierEdge be = (BezierEdge)edges[draggedCP1];
+                    Point d = new Point(currentMouseLocation.X - be.ControlPoint1.X,
+                                currentMouseLocation.Y - be.ControlPoint1.Y);
+                    UpdateWithCP1(draggedCP1, d);
+                }
+                else if(draggedCP2 != -1)
+                {
+                    BezierEdge be = (BezierEdge)edges[draggedCP2];
+                    Point d = new Point(currentMouseLocation.X - be.ControlPoint2.X,
+                                currentMouseLocation.Y - be.ControlPoint2.Y);
+                    UpdateWithCP2(draggedCP2, d);
+                }
+                else
+                {
+                    Point delta = new Point(currentMouseLocation.X - edges[draggedVertexIndex].End.X,
+                                    currentMouseLocation.Y - edges[draggedVertexIndex].End.Y);
 
-                UpdateEdgesWithVisitor(draggedVertexIndex, delta);
+                    UpdateEdgesWithVisitor(draggedVertexIndex, delta);
+                }
                 Canvas.Invalidate();
 
             }
@@ -470,9 +726,30 @@ namespace projekt_1
             {
                 Point clickLocation = new Point(e.X, e.Y);
 
+                
 
                 draggedVertexIndex = FindNearestVertex(clickLocation);
-                if (draggedVertexIndex != -1)
+                draggedCP1 = draggedCP2 = -1;
+                if (draggedVertexIndex == -1)
+                {
+                    for (int i = 0; i < edges.Count; i++)
+                    {
+                        if (edges[i] is BezierEdge be)
+                        {
+                            if (Distance(clickLocation, be.ControlPoint1) < 10)
+                            {
+                                draggedCP1 = i;
+                                break;
+                            }
+                            if(Distance(clickLocation, be.ControlPoint2)<10)
+                            {
+                                draggedCP2 = i;
+                                break;
+                            }
+                        }
+                    }
+                }
+                if(draggedVertexIndex != -1 || draggedCP1 != -1 || draggedCP2 != -1)
                 {
                     isDraggingVertex = true;
                 }
@@ -695,6 +972,101 @@ namespace projekt_1
         {
             edges[clickedEdgeIndex] = new BezierEdge(edges[clickedEdgeIndex].Start, edges[clickedEdgeIndex].End, edges[(clickedEdgeIndex + edges.Count - 1) % edges.Count], edges[(clickedEdgeIndex + 1) % edges.Count]);
             Canvas.Invalidate();
+        }
+        public void SetG0_Click(object sender, EventArgs e)
+        {
+            if (edges[clickedEdgeIndex] is BezierEdge be)
+                be.EndContinuity = BezierEdge.ContinuityType.G0;
+            if (edges[(clickedEdgeIndex + 1) % edges.Count] is BezierEdge be2)
+                be2.StartContinuity = BezierEdge.ContinuityType.G0;
+        }
+        public void SetG1_Click(object sender, EventArgs e)
+        {
+            SetG1(clickedEdgeIndex);
+            Canvas.Invalidate();
+        }
+        private void SetG1(int idx)
+        {
+            if (edges[idx] is BezierEdge be && edges[(idx + 1) % edges.Count] is BezierEdge be2)
+            {
+                be.EndContinuity = be2.StartContinuity = BezierEdge.ContinuityType.G1;
+                float originalDistance = (float)Math.Sqrt(
+                    Math.Pow(be2.ControlPoint1.X - be2.Start.X, 2) +
+                    Math.Pow(be2.ControlPoint1.Y - be2.Start.Y, 2));
+                float edgeLength = (float)Math.Sqrt(
+                   Math.Pow(be.End.X - be.ControlPoint2.X, 2) +
+                   Math.Pow(be.End.Y - be.ControlPoint2.Y, 2));
+                PointF direction = new PointF(
+                   (be.End.X - be.ControlPoint2.X) / edgeLength,
+                   (be.End.Y - be.ControlPoint2.Y) / edgeLength);
+                be2.ControlPoint1 = new Point(
+                   (int)Math.Round(be2.Start.X + direction.X * originalDistance),
+                   (int)Math.Round(be2.Start.Y + direction.Y * originalDistance));
+            }
+            else if (edges[idx] is BezierEdge be3)
+            {
+                be3.EndContinuity = BezierEdge.ContinuityType.G1;
+                Edge e1 = edges[(idx + 1) % edges.Count];
+                float originalDistance = (float)Math.Sqrt(
+                    Math.Pow(be3.ControlPoint2.X - be3.End.X, 2) +
+                    Math.Pow(be3.ControlPoint2.Y - be3.End.Y, 2));
+                float edgeLength = (float)Math.Sqrt(
+                    Math.Pow(e1.End.X - e1.Start.X, 2) +
+                    Math.Pow(e1.End.Y - e1.Start.Y, 2));
+                PointF direction = new PointF(
+                   (e1.End.X - e1.Start.X) / edgeLength,
+                   (e1.End.Y - e1.Start.Y) / edgeLength);
+                be3.ControlPoint2 = new Point(
+                    (int)Math.Round(be3.End.X - direction.X * originalDistance),
+                    (int)Math.Round(be3.End.Y - direction.Y * originalDistance));
+
+            }
+            else if (edges[(idx + 1) % edges.Count] is BezierEdge be4)
+            {
+                be4.StartContinuity = BezierEdge.ContinuityType.G1;
+                Edge e1 = edges[idx];
+                float originalDistance = (float)Math.Sqrt(
+                    Math.Pow(be4.ControlPoint1.X - be4.Start.X, 2) +
+                    Math.Pow(be4.ControlPoint1.Y - be4.Start.Y, 2));
+                float edgeLength = (float)Math.Sqrt(
+                    Math.Pow(e1.End.X - e1.Start.X, 2) +
+                    Math.Pow(e1.End.Y - e1.Start.Y, 2));
+                PointF direction = new PointF(
+                   (e1.Start.X - e1.End.X) / edgeLength,
+                   (e1.Start.Y - e1.End.Y) / edgeLength);
+                be4.ControlPoint1 = new Point(
+                    (int)Math.Round(be4.Start.X - direction.X * originalDistance),
+                    (int)Math.Round(be4.Start.Y - direction.Y * originalDistance));
+
+            }
+        }
+        public void SetC1_Click(object sender, EventArgs e)
+        {
+
+            SetC1(clickedEdgeIndex);
+            Canvas.Invalidate();
+        }
+        private void SetC1(int idx)
+        {
+            if (edges[idx] is BezierEdge be && edges[(idx + 1) % edges.Count] is BezierEdge be2)
+            {
+                be.EndContinuity = be2.StartContinuity = BezierEdge.ContinuityType.C1;
+                be2.ControlPoint1 = new Point(2 * be.End.X - be.ControlPoint2.X,
+                    2 * be.End.Y - be.ControlPoint2.Y);
+            }
+            else if (edges[idx] is BezierEdge be3)
+            {
+                Edge e1 = edges[(idx + 1) % edges.Count];
+                be3.EndContinuity = BezierEdge.ContinuityType.C1;
+                be3.ControlPoint2 = new Point(e1.Start.X * 2 - e1.End.X,
+                                                e1.Start.Y * 2 - e1.End.Y);
+            }
+            else if (edges[(idx + 1) % edges.Count] is BezierEdge be4)
+            {
+                Edge e1 = edges[idx];
+                be4.StartContinuity = BezierEdge.ContinuityType.C1;
+                be4.ControlPoint1 = new Point(2 * e1.End.X - e1.Start.X, 2 * e1.End.Y - e1.Start.Y);
+            }
         }
 
         public Edge GetPreviousEdge(Edge currentEdge)
