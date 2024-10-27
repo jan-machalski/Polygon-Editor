@@ -26,6 +26,7 @@ namespace projekt_1
             contextMenuEdge.Items.Add("Dodaj ograniczenie poziome", null, AddHorizontalConstraint_Click);
             contextMenuEdge.Items.Add("Dodaj ograniczenie pionowe", null, AddVerticalConstraint_Click);
             contextMenuEdge.Items.Add("Dodaj ograniczenie d³ugoœci", null, AddFixedLengthConstraint_Click);
+            contextMenuEdge.Items.Add("Ustaw krzyw¹ Beziera", null, AddBezierEdgeConstraint_Click);
             contextMenuEdge.Items.Add("Usuñ ograniczenie", null, DeleteConstraint_Click);
             deleteItem.Click += DeleteVertex_Click;
             contextMenu.Items.Add(deleteItem);
@@ -45,21 +46,23 @@ namespace projekt_1
             Pen vertexPen = new Pen(Color.Black, 2); // Wierzcho³ki bêd¹ grubsze
             Brush fillBrush = new SolidBrush(Color.LightBlue); // Pêdzel do wype³nienia jasnoniebieskim kolorem
             EdgeDrawingVisitor drawingVisitor = new EdgeDrawingVisitor();
+            bool bresenham = bresenhamButton.Checked;
 
             // Rysowanie wszystkich krawêdzi
             foreach (var edge in edges)
             {
-                edge.AcceptDraw(drawingVisitor, g, edgePen);
+                edge.AcceptDraw(drawingVisitor, g, edgePen, bresenham);
             }
 
             // Rysowanie wierzcho³ków jako ma³e okrêgi
+            Pen blackPen = new Pen(Color.Black);
             foreach (var edge in edges)
             {
-                g.FillEllipse(Brushes.Black, edge.Start.X - 5, edge.Start.Y - 5, 10, 10); // Okr¹g o œrednicy 6 pikseli
+                g.DrawEllipse(blackPen, edge.Start.X - 5, edge.Start.Y - 5, 10, 10); // Okr¹g o œrednicy 6 pikseli
             }
             if (edges.Count > 0)
             {
-                g.FillEllipse(Brushes.Black, edges.Last().End.X - 5, edges.Last().End.Y - 5, 10, 10); // Ostatni wierzcho³ek
+                g.DrawEllipse(blackPen, edges.Last().End.X - 5, edges.Last().End.Y - 5, 10, 10); // Ostatni wierzcho³ek
             }
 
             // Rysowanie pó³przezroczystej linii pod¹¿aj¹cej za kursorem, jeœli rysowanie jeszcze trwa
@@ -142,6 +145,8 @@ namespace projekt_1
             bool forwardSuccess = true;
             bool backwardSuccess = true;
             int modifiedEdgesCount = 2;
+            if (edges.Count == 3)
+                modifiedEdgesCount = 1;
             edgeCopy[forwardIndex].Start = edgeCopy[backwardIndex].End = new Point(edges[forwardIndex].Start.X + delta.X, edges[forwardIndex].Start.Y + delta.Y);
 
 
@@ -194,14 +199,29 @@ namespace projekt_1
                 {
                     edge.Start = new Point(edge.Start.X + delta.X, edge.Start.Y + delta.Y);
                     edge.End = new Point(edge.End.X + delta.X, edge.End.Y + delta.Y);
+                    if (edge is BezierEdge be)
+                    {
+                        be.ControlPoint1 = new Point(be.ControlPoint1.X + delta.X, be.ControlPoint1.Y + delta.Y);
+                        be.ControlPoint2 = new Point(be.ControlPoint2.X + delta.X, be.ControlPoint2.Y + delta.Y);
+                    }
                 }
             }
             else
             {
                 for (int i = 0; i < edges.Count; i++)
                 {
-                    edges[i].Start = edgeCopy[i].Start;
-                    edges[i].End = edgeCopy[i].End;
+                    edges[i] = edgeCopy[i].Clone();
+                }
+                for (int i = 0; i < edges.Count; i++)
+                {
+                    if (edges[i] is not BezierEdge && edges[(i + 1) % edges.Count] is BezierEdge be)
+                    {
+                        edges[i].Accept(new EdgeStartChangeVisitor(), be, new Point());
+                    }
+                    if (edges[i] is not BezierEdge && edges[(i + edges.Count - 1) % edges.Count] is BezierEdge be2)
+                    {
+                        edges[i].Accept(new EdgeEndChangeVisitor(), be2, new Point());
+                    }
                 }
             }
 
@@ -239,6 +259,11 @@ namespace projekt_1
                 {
                     edges[i].Start = new Point(edges[i].Start.X + dx, edges[i].Start.Y + dy);
                     edges[i].End = new Point(edges[i].End.X + dx, edges[i].End.Y + dy);
+                    if (edges[i] is BezierEdge bezierEdge)
+                    {
+                        bezierEdge.ControlPoint1 = new Point(bezierEdge.ControlPoint1.X + dx, bezierEdge.ControlPoint1.Y + dy);
+                        bezierEdge.ControlPoint2 = new Point(bezierEdge.ControlPoint2.X + dx, bezierEdge.ControlPoint2.Y + dy);
+                    }
                 }
 
                 // Zaktualizuj punkt pocz¹tkowy na aktualn¹ pozycjê
@@ -263,6 +288,12 @@ namespace projekt_1
             edges.RemoveAt(clickedEdgeIndex);
             edges.Insert(clickedEdgeIndex, new NoConstraintEdge(midpoint, end));
             edges.Insert(clickedEdgeIndex, new NoConstraintEdge(start, midpoint));
+            if (edges[(clickedEdgeIndex + 2) % edges.Count] is BezierEdge be)
+            {
+                be.AcceptNoConstraint(new EdgeStartChangeVisitor(), (NoConstraintEdge)edges[(clickedEdgeIndex + 1) % edges.Count], new Point());
+            }
+            if (edges[(clickedEdgeIndex + edges.Count - 1) % edges.Count] is BezierEdge be2)
+                be2.AcceptNoConstraint(new EdgeEndChangeVisitor(), (NoConstraintEdge)edges[clickedEdgeIndex], new Point());
 
             Canvas.Invalidate();
         }
@@ -285,6 +316,7 @@ namespace projekt_1
                         edges.RemoveAt(edgeToRemoveIndex);
                         edges.RemoveAt(nextEdgeIndex);
                         edges.Insert(0, new NoConstraintEdge(newStart, newEnd));
+                        edgeToRemoveIndex = 0;
                     }
                     else
                     {
@@ -294,7 +326,12 @@ namespace projekt_1
                         edges.RemoveAt(edgeToRemoveIndex); // Usuniêcie krawêdzi wskazanej przez u¿ytkownika
                         edges.Insert(edgeToRemoveIndex, new NoConstraintEdge(newStart, newEnd));
                     }
-
+                    if (edges[(edgeToRemoveIndex + 1) % edges.Count] is BezierEdge be)
+                    {
+                        be.AcceptNoConstraint(new EdgeStartChangeVisitor(), (NoConstraintEdge)edges[(edgeToRemoveIndex)], new Point());
+                    }
+                    if (edges[(edgeToRemoveIndex + edges.Count - 1) % edges.Count] is BezierEdge be2)
+                        be2.AcceptNoConstraint(new EdgeEndChangeVisitor(), (NoConstraintEdge)edges[edgeToRemoveIndex], new Point());
                     // Wstaw now¹ krawêdŸ w miejsce usuniêtej pierwszej krawêdzi
 
                 }
@@ -324,11 +361,23 @@ namespace projekt_1
         {
             for (int i = 0; i < edges.Count; i++)
             {
-                if (IsPointNearLine(edges[i].Start, edges[i].End, location, 5)) // 5 pikseli tolerancji
+                if (edges[i] is BezierEdge bezierEdge)
                 {
-                    // Wyœwietl menu kontekstowe
-                    contextMenu.Tag = i; // Zapisz indeks krawêdzi
-                    return i;
+                    // Jeœli tak, sprawdzamy bliskoœæ punktu wzglêdem krzywej Béziera
+                    if (IsPointNearBezierCurve(bezierEdge.Start, bezierEdge.ControlPoint1, bezierEdge.ControlPoint2, bezierEdge.End, location, 5))
+                    {
+                        contextMenu.Tag = i; // Zapisz indeks krawêdzi
+                        return i;
+                    }
+                }
+                else
+                {
+                    if (IsPointNearLine(edges[i].Start, edges[i].End, location, 5)) // 5 pikseli tolerancji
+                    {
+                        // Wyœwietl menu kontekstowe
+                        contextMenu.Tag = i; // Zapisz indeks krawêdzi
+                        return i;
+                    }
                 }
             }
             return -1;
@@ -351,6 +400,33 @@ namespace projekt_1
 
             return distance <= tolerance && withinXBounds && withinYBounds;
         }
+        private bool IsPointNearBezierCurve(Point start, Point control1, Point control2, Point end, Point location, double tolerance)
+        {
+            int segments = 50; // Podzielmy krzyw¹ na 20 segmentów dla wiêkszej dok³adnoœci
+            for (int i = 0; i <= segments; i++)
+            {
+                double t = i / (double)segments;
+
+                // Obliczamy punkt na krzywej Béziera za pomoc¹ równania parametrycznego
+                double x = Math.Pow(1 - t, 3) * start.X +
+                           3 * Math.Pow(1 - t, 2) * t * control1.X +
+                           3 * (1 - t) * Math.Pow(t, 2) * control2.X +
+                           Math.Pow(t, 3) * end.X;
+
+                double y = Math.Pow(1 - t, 3) * start.Y +
+                           3 * Math.Pow(1 - t, 2) * t * control1.Y +
+                           3 * (1 - t) * Math.Pow(t, 2) * control2.Y +
+                           Math.Pow(t, 3) * end.Y;
+
+                // Obliczamy odleg³oœæ miêdzy punktem na krzywej a lokalizacj¹
+                double distance = Math.Sqrt(Math.Pow(x - location.X, 2) + Math.Pow(y - location.Y, 2));
+
+                if (distance <= tolerance)
+                    return true;
+            }
+            return false;
+        }
+
         private double Distance(Point p1, Point p2)
         {
             // Obliczanie odleg³oœci miêdzy dwoma punktami
@@ -428,7 +504,10 @@ namespace projekt_1
             var delta = new Point(0, currentEdge.Start.Y - currentEdge.End.Y);
 
             edges[clickedEdgeIndex] = new HorizontalEdge(edges[clickedEdgeIndex].Start, edges[clickedEdgeIndex].End);
-
+            if (edges[(clickedEdgeIndex + edges.Count - 1) % edges.Count] is BezierEdge be)
+            {
+                be.AcceptHorizontal(new EdgeEndChangeVisitor(), (HorizontalEdge)edges[clickedEdgeIndex], new Point());
+            }
             bool modificationSuccess = false;
             int currentIndex = clickedEdgeIndex;
 
@@ -480,6 +559,10 @@ namespace projekt_1
 
             // Zmiana bie¿¹cej krawêdzi na pionow¹
             edges[clickedEdgeIndex] = new VerticalEdge(edges[clickedEdgeIndex].Start, edges[clickedEdgeIndex].End);
+            if (edges[(clickedEdgeIndex + edges.Count - 1) % edges.Count] is BezierEdge be)
+            {
+                be.AcceptVertical(new EdgeEndChangeVisitor(), (VerticalEdge)edges[clickedEdgeIndex], new Point());
+            }
 
             bool modificationSuccess = false;
             int currentIndex = clickedEdgeIndex;
@@ -570,6 +653,10 @@ namespace projekt_1
             // Ustaw now¹ krawêdŸ FixedLengthEdge
             Point delta = new Point(newEnd.X - currentEdge.End.X, newEnd.Y - currentEdge.End.Y);
             edges[clickedEdgeIndex] = new FixedLengthEdge(currentEdge.Start, currentEdge.End, newLength);
+            if (edges[(clickedEdgeIndex + edges.Count - 1) % edges.Count] is BezierEdge be)
+            {
+                be.AcceptFixedLength(new EdgeEndChangeVisitor(), (FixedLengthEdge)edges[clickedEdgeIndex], new Point());
+            }
 
             // Sprawdzanie dopasowania pozosta³ych krawêdzi
             bool modificationSuccess = false;
@@ -603,7 +690,11 @@ namespace projekt_1
             }
 
             Canvas.Invalidate();
-            ;
+        }
+        public void AddBezierEdgeConstraint_Click(object sender, EventArgs e)
+        {
+            edges[clickedEdgeIndex] = new BezierEdge(edges[clickedEdgeIndex].Start, edges[clickedEdgeIndex].End, edges[(clickedEdgeIndex + edges.Count - 1) % edges.Count], edges[(clickedEdgeIndex + 1) % edges.Count]);
+            Canvas.Invalidate();
         }
 
         public Edge GetPreviousEdge(Edge currentEdge)

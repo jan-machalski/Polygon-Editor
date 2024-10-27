@@ -24,6 +24,10 @@ namespace projekt_1
         public bool Visit(FixedLengthEdge currentEdge, FixedLengthEdge nextEdge, Point delta);
         public bool Visit(HorizontalEdge currentEdge, HorizontalEdge nextEdge, Point delta);
         public bool Visit(VerticalEdge currentEdge, VerticalEdge nextEdge, Point delta);
+        public bool Visit(NoConstraintEdge currentEdge, BezierEdge nextEdge, Point delta);
+        public bool Visit(HorizontalEdge currentEdge, BezierEdge nextEdge,Point delta);
+        public bool Visit(VerticalEdge currentEdge, BezierEdge nextEdge, Point delta);
+        public bool Visit(FixedLengthEdge currentEdge, BezierEdge nextEdge, Point delta);
     }
 
     public class EdgeStartChangeVisitor : IEdgeVisitor
@@ -255,6 +259,116 @@ namespace projekt_1
             throw new NotSupportedException();
         }
 
+        public bool Visit(NoConstraintEdge currentEdge, BezierEdge nextEdge, Point delta)
+        {
+            if (nextEdge.StartContinuity == BezierEdge.ContinuityType.G0)
+                return false;
+            else if (nextEdge.StartContinuity == BezierEdge.ContinuityType.G1)
+            {
+                float originalDistance = (float)Math.Sqrt(
+                    Math.Pow(nextEdge.ControlPoint1.X - nextEdge.Start.X, 2) +
+                    Math.Pow(nextEdge.ControlPoint1.Y - nextEdge.Start.Y, 2));
+
+
+                PointF direction = new PointF(
+                    (currentEdge.End.X - currentEdge.Start.X) / originalDistance,
+                    (currentEdge.End.Y - currentEdge.Start.Y) / originalDistance);
+
+                nextEdge.ControlPoint1 = new Point(
+                    (int)(nextEdge.Start.X + direction.X * originalDistance),
+                    (int)(nextEdge.Start.Y + direction.Y * originalDistance));
+
+                return false;
+            }
+            else
+            {
+                nextEdge.ControlPoint1 = new Point(currentEdge.End.X * 2 - currentEdge.Start.X, currentEdge.End.Y * 2 - currentEdge.Start.Y);
+
+                return false;
+            }
+        }
+        public bool Visit(HorizontalEdge currentEdge, BezierEdge nextEdge, Point delta)
+        {
+            currentEdge.End = new Point(currentEdge.End.X, currentEdge.Start.Y);
+            int originalDistance = (int)Math.Sqrt(
+               Math.Pow(nextEdge.ControlPoint1.X - nextEdge.Start.X, 2) +
+               Math.Pow(nextEdge.ControlPoint1.Y - nextEdge.Start.Y, 2));
+            nextEdge.Start = currentEdge.End;
+            if(nextEdge.StartContinuity == BezierEdge.ContinuityType.G0)
+            {
+                return false;
+            }
+            else if(nextEdge.StartContinuity == BezierEdge.ContinuityType.G1)
+            {
+                nextEdge.ControlPoint1 = new Point(currentEdge.End.X+originalDistance, currentEdge.End.Y);
+                return false;
+            }
+            else
+            {
+                nextEdge.ControlPoint1 = new Point(currentEdge.End.X * 2 - currentEdge.Start.X, currentEdge.End.Y);
+                return false;
+            }
+        }
+        public bool Visit(VerticalEdge currentEdge, BezierEdge nextEdge, Point delta)
+        {
+            currentEdge.End = new Point(currentEdge.Start.X, currentEdge.End.Y);
+            int originalDistance = (int)Math.Sqrt(
+               Math.Pow(nextEdge.ControlPoint1.X - nextEdge.Start.X, 2) +
+               Math.Pow(nextEdge.ControlPoint1.Y - nextEdge.Start.Y, 2));
+            nextEdge.Start = currentEdge.End;
+            if (nextEdge.StartContinuity == BezierEdge.ContinuityType.G0)
+            {
+                return false;
+            }
+            else if (nextEdge.StartContinuity == BezierEdge.ContinuityType.G1)
+            {
+                nextEdge.ControlPoint1 = new Point(currentEdge.End.X, currentEdge.End.Y + originalDistance);
+                return false;
+            }
+            else
+            {
+                nextEdge.ControlPoint1 = new Point(currentEdge.End.X , currentEdge.End.Y * 2 - currentEdge.Start.Y);
+                return false;
+            }
+        }
+        public bool Visit(FixedLengthEdge currentEdge, BezierEdge nextEdge, Point delta)
+        {
+            currentEdge.End = new Point(currentEdge.End.X + delta.X, currentEdge.End.Y + delta.Y);
+            float originalDistance = (float)Math.Sqrt(
+               Math.Pow(nextEdge.ControlPoint1.X - nextEdge.Start.X, 2) +
+               Math.Pow(nextEdge.ControlPoint1.Y - nextEdge.Start.Y, 2));
+            nextEdge.Start = currentEdge.End;
+            if (nextEdge.StartContinuity == BezierEdge.ContinuityType.G0)
+            {
+                return false;
+            }
+            else if (nextEdge.StartContinuity == BezierEdge.ContinuityType.G1)
+            {
+                PointF direction = new PointF(
+                    (currentEdge.End.X - currentEdge.Start.X) / originalDistance,
+                    (currentEdge.End.Y - currentEdge.Start.Y) / originalDistance);
+
+                nextEdge.ControlPoint1 = new Point(
+                    (int)(nextEdge.Start.X + direction.X * originalDistance),
+                    (int)(nextEdge.Start.Y + direction.Y * originalDistance));
+                return false;
+            }
+            else
+            {
+                float edgeLength = (float)Math.Sqrt(
+                   Math.Pow(currentEdge.End.X - currentEdge.Start.X, 2) +
+                   Math.Pow(currentEdge.End.Y - currentEdge.Start.Y, 2));
+
+                PointF direction = new PointF(
+                    (currentEdge.End.X - currentEdge.Start.X) / edgeLength,
+                    (currentEdge.End.Y - currentEdge.Start.Y) / edgeLength);
+
+                nextEdge.ControlPoint1 = new Point(
+                    (int)(nextEdge.Start.X + direction.X * edgeLength),
+                    (int)(nextEdge.Start.Y + direction.Y * edgeLength));
+                return false;
+            }
+        }
 
 
     }
@@ -497,6 +611,114 @@ namespace projekt_1
         public bool Visit(VerticalEdge currentEdge, VerticalEdge prevEdge, Point delta)
         {
             throw new NotSupportedException();
+        }
+
+        public bool Visit(NoConstraintEdge currentEdge, BezierEdge prevEdge, Point delta)
+        {
+            if (prevEdge.EndContinuity == BezierEdge.ContinuityType.G0)
+                return false;
+            else if(prevEdge.EndContinuity == BezierEdge.ContinuityType.G1)
+            {
+                float originalDistance = (float)Math.Sqrt(
+                    Math.Pow(prevEdge.ControlPoint2.X - prevEdge.End.X, 2) +
+                    Math.Pow(prevEdge.ControlPoint2.Y - prevEdge.End.Y, 2));
+                PointF direction = new PointF(
+                  (currentEdge.Start.X - currentEdge.End.X) / originalDistance,
+                  (currentEdge.Start.Y - currentEdge.End.Y) / originalDistance);
+
+                prevEdge.ControlPoint1 = new Point(
+                    (int)(prevEdge.End.X + direction.X * originalDistance),
+                    (int)(prevEdge.End.Y + direction.Y * originalDistance));
+
+                return false;
+            }
+            else
+            {
+                prevEdge.ControlPoint2 = new Point(2*currentEdge.Start.X - currentEdge.End.X, 2 * currentEdge.Start.Y - currentEdge.End.Y);
+                return false;
+            }
+        }
+        public bool Visit(HorizontalEdge currentEdge, BezierEdge prevEdge, Point delta)
+        {
+            currentEdge.Start = new Point(currentEdge.Start.X, currentEdge.End.Y);
+            float originalDistance = (float)Math.Sqrt(
+               Math.Pow(prevEdge.ControlPoint2.X - prevEdge.End.X, 2) +
+               Math.Pow(prevEdge.ControlPoint2.Y - prevEdge.End.Y, 2));
+            prevEdge.End = currentEdge.Start;
+            if (prevEdge.EndContinuity == BezierEdge.ContinuityType.G0)
+            {
+                return false;
+            }
+            else if (prevEdge.EndContinuity == BezierEdge.ContinuityType.G1)
+            {
+                prevEdge.ControlPoint2 = new Point(currentEdge.Start.X + (int)originalDistance, currentEdge.Start.Y);
+                return false;
+            }
+            else
+            {
+                prevEdge.ControlPoint2 = new Point(currentEdge.Start.X * 2 - currentEdge.End.X, currentEdge.Start.Y);
+                return false;
+            }
+        }
+        public bool Visit(VerticalEdge currentEdge, BezierEdge prevEdge, Point delta)
+        {
+            currentEdge.Start = new Point(currentEdge.End.X, currentEdge.Start.Y);
+            int originalDistance = (int)Math.Sqrt(
+               Math.Pow(prevEdge.ControlPoint2.X - prevEdge.End.X, 2) +
+               Math.Pow(prevEdge.ControlPoint2.Y - prevEdge.End.Y, 2));
+            prevEdge.End = currentEdge.Start;
+            if (prevEdge.EndContinuity == BezierEdge.ContinuityType.G0)
+            {
+                return false;
+            }
+            else if (prevEdge.EndContinuity == BezierEdge.ContinuityType.G1)
+            {
+                prevEdge.ControlPoint2 = new Point(currentEdge.Start.X , currentEdge.Start.Y + originalDistance);
+                return false;
+            }
+            else
+            {
+                prevEdge.ControlPoint2 = new Point(currentEdge.Start.X , currentEdge.Start.Y * 2 - currentEdge.End.Y);
+                return false;
+            }
+        }
+        public bool Visit(FixedLengthEdge currentEdge, BezierEdge prevEdge, Point delta)
+        {
+            currentEdge.Start = new Point(currentEdge.Start.X + delta.X, currentEdge.Start.Y + delta.Y);
+            float originalDistance = (float)Math.Sqrt(
+               Math.Pow(prevEdge.ControlPoint2.X - prevEdge.End.X, 2) +
+               Math.Pow(prevEdge.ControlPoint2.Y - prevEdge.End.Y, 2));
+            prevEdge.End = currentEdge.Start;
+            if (prevEdge.EndContinuity == BezierEdge.ContinuityType.G0)
+            {
+                return false;
+            }
+            else if (prevEdge.EndContinuity == BezierEdge.ContinuityType.G1)
+            {
+                PointF direction = new PointF(
+                    (currentEdge.Start.X - currentEdge.End.X) / originalDistance,
+                    (currentEdge.Start.Y - currentEdge.End.Y) / originalDistance);
+
+                prevEdge.ControlPoint1 = new Point(
+                    (int)(prevEdge.End.X + direction.X * originalDistance),
+                    (int)(prevEdge.End.Y + direction.Y * originalDistance));
+                return false;
+            }
+            else
+            {
+                float edgeLength = (float)Math.Sqrt(
+                   Math.Pow(currentEdge.Start.X - currentEdge.End.X, 2) +
+                   Math.Pow(currentEdge.Start.Y - currentEdge.End.Y, 2));
+
+                PointF direction = new PointF(
+                    (currentEdge.Start.X - currentEdge.End.X) / edgeLength,
+                    (currentEdge.Start.Y - currentEdge.End.Y) / edgeLength);
+
+                prevEdge.ControlPoint2 = new Point(
+                    (int)(prevEdge.End.X + direction.X * edgeLength),
+                    (int)(prevEdge.End.Y + direction.Y * edgeLength));
+                return false;
+            }
         }
     }
 }

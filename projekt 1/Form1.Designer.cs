@@ -29,23 +29,20 @@
         private void InitializeComponent()
         {
             Canvas = new PictureBox();
-            menuStrip1 = new MenuStrip();
-            clearButton = new ToolStripMenuItem();
             removeButton = new Button();
             normalDrawButton = new RadioButton();
             bresenhamButton = new RadioButton();
             label1 = new Label();
             ((System.ComponentModel.ISupportInitialize)Canvas).BeginInit();
-            menuStrip1.SuspendLayout();
             SuspendLayout();
             // 
             // Canvas
             // 
-            Canvas.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left;
+            Canvas.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
             Canvas.BorderStyle = BorderStyle.FixedSingle;
-            Canvas.Location = new Point(0, 24);
+            Canvas.Location = new Point(0, 0);
             Canvas.Name = "Canvas";
-            Canvas.Size = new Size(800, 426);
+            Canvas.Size = new Size(800, 450);
             Canvas.TabIndex = 0;
             Canvas.TabStop = false;
             Canvas.Paint += Canvas_Paint;
@@ -54,64 +51,52 @@
             Canvas.MouseMove += Canvas_MouseMove;
             Canvas.MouseUp += Canvas_MouseUp;
             // 
-            // menuStrip1
-            // 
-            menuStrip1.Items.AddRange(new ToolStripItem[] { clearButton });
-            menuStrip1.Location = new Point(0, 0);
-            menuStrip1.Name = "menuStrip1";
-            menuStrip1.Size = new Size(984, 24);
-            menuStrip1.TabIndex = 1;
-            menuStrip1.Text = "menuStrip1";
-            // 
-            // clearButton
-            // 
-            clearButton.Name = "clearButton";
-            clearButton.Size = new Size(46, 20);
-            clearButton.Text = "Clear";
-            clearButton.Click += clearButton_Click;
-            // 
             // removeButton
             // 
-            removeButton.Location = new Point(820, 24);
+            removeButton.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+            removeButton.Location = new Point(820, 12);
             removeButton.Name = "removeButton";
             removeButton.Size = new Size(143, 43);
             removeButton.TabIndex = 2;
-            removeButton.Text = "Remove Polygon";
+            removeButton.Text = "Usuń wielokąt";
             removeButton.UseVisualStyleBackColor = true;
             removeButton.Click += removeButton_Click;
             // 
             // normalDrawButton
             // 
+            normalDrawButton.Anchor = AnchorStyles.Top | AnchorStyles.Right;
             normalDrawButton.AutoSize = true;
             normalDrawButton.Checked = true;
-            normalDrawButton.Location = new Point(824, 119);
+            normalDrawButton.Location = new Point(824, 98);
             normalDrawButton.Name = "normalDrawButton";
-            normalDrawButton.Size = new Size(118, 19);
+            normalDrawButton.Size = new Size(129, 19);
             normalDrawButton.TabIndex = 3;
             normalDrawButton.TabStop = true;
-            normalDrawButton.Text = "Default algorithm";
+            normalDrawButton.Text = "Domyślny algorytm";
             normalDrawButton.UseVisualStyleBackColor = true;
             normalDrawButton.Click += normalDrawButton_Click;
             // 
             // bresenhamButton
             // 
+            bresenhamButton.Anchor = AnchorStyles.Top | AnchorStyles.Right;
             bresenhamButton.AutoSize = true;
-            bresenhamButton.Location = new Point(824, 144);
+            bresenhamButton.Location = new Point(824, 123);
             bresenhamButton.Name = "bresenhamButton";
-            bresenhamButton.Size = new Size(139, 19);
+            bresenhamButton.Size = new Size(143, 19);
             bresenhamButton.TabIndex = 4;
-            bresenhamButton.Text = "Bresenham algorithm";
+            bresenhamButton.Text = "Algorytm Bresenhama";
             bresenhamButton.UseVisualStyleBackColor = true;
             bresenhamButton.Click += bresenhamButton_Click;
             // 
             // label1
             // 
+            label1.Anchor = AnchorStyles.Top | AnchorStyles.Right;
             label1.AutoSize = true;
-            label1.Location = new Point(820, 92);
+            label1.Location = new Point(820, 80);
             label1.Name = "label1";
-            label1.Size = new Size(134, 15);
+            label1.Size = new Size(162, 15);
             label1.TabIndex = 5;
-            label1.Text = "Edge drawing algorithm";
+            label1.Text = "Algorytm rysowania krawędzi";
             // 
             // Form1
             // 
@@ -123,13 +108,9 @@
             Controls.Add(normalDrawButton);
             Controls.Add(removeButton);
             Controls.Add(Canvas);
-            Controls.Add(menuStrip1);
-            MainMenuStrip = menuStrip1;
             Name = "Form1";
             Text = "Polygon Editor";
             ((System.ComponentModel.ISupportInitialize)Canvas).EndInit();
-            menuStrip1.ResumeLayout(false);
-            menuStrip1.PerformLayout();
             ResumeLayout(false);
             PerformLayout();
         }
@@ -137,8 +118,6 @@
         #endregion
 
         private PictureBox Canvas;
-        private MenuStrip menuStrip1;
-        private ToolStripMenuItem clearButton;
         private Button removeButton;
         private RadioButton normalDrawButton;
         private RadioButton bresenhamButton;
