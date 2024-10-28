@@ -5,7 +5,7 @@ namespace projekt_1
     public partial class Form1 : Form
     {
         private List<Edge> edges = new List<Edge>();
-        private bool drawingComplete = false;
+        private bool drawingComplete = true;
         private Point? currentMousePosition = null;
         private ContextMenuStrip contextMenu = new ContextMenuStrip();
         private ContextMenuStrip contextMenuEdge = new ContextMenuStrip();
@@ -37,6 +37,9 @@ namespace projekt_1
             contextMenuBezier.Items.Add("Usuñ wierzcho³ek", null, DeleteVertex_Click);
             deleteItem.Click += DeleteVertex_Click;
             contextMenu.Items.Add(deleteItem);
+
+            InitEdges();
+            Canvas.Invalidate();
         }
         private void clearButton_Click(object sender, EventArgs e)
         {
@@ -61,7 +64,7 @@ namespace projekt_1
                 edge.AcceptDraw(drawingVisitor, g, edgePen, bresenham);
             }
 
-            for(int i = 0;i<edges.Count;i++)
+            for (int i = 0; i < edges.Count; i++)
             {
                 if (edges[i] is BezierEdge be)
                 {
@@ -69,7 +72,7 @@ namespace projekt_1
                     PointF textPosition = new PointF(be.Start.X + 5, be.Start.Y - 15);
 
                     g.DrawString(continuityInfo, new Font("Arial", 8), Brushes.Black, textPosition);
-                    if (edges[(i+1)%edges.Count] is not BezierEdge)
+                    if (edges[(i + 1) % edges.Count] is not BezierEdge)
                     {
                         continuityInfo = be.EndContinuity.ToString();
                         textPosition = new PointF(be.End.X + 5, be.End.Y - 15);
@@ -137,7 +140,7 @@ namespace projekt_1
             // Obs³uguje lewy przycisk myszy
             Point clickLocationLeft = new Point(e.X, e.Y);
 
-            if (edges.Count > 1 && IsFirstEdgeClicked(clickLocationLeft))
+            if (edges.Count > 2 && IsFirstEdgeClicked(clickLocationLeft))
             {
                 // Jeœli klikniêto blisko pierwszej krawêdzi, zamykamy wielok¹t
                 drawingComplete = true;
@@ -1168,6 +1171,74 @@ Opis dzia³ania programu:
 -Dla krzywych beziera sprawdzanie dzia³a podobnie. Sprawdzana jest dodatkowo ci¹g³oœæ w punktach"
 ;
             MessageBox.Show(programDescription, "Opis zastosowanych rozwi¹zañ", MessageBoxButtons.OK, MessageBoxIcon.Information);
+        }
+        private void InitEdges()
+        {
+            edges = new List<Edge>
+    {
+        // BezierEdge 1
+        new BezierEdge
+        {
+            Start = new Point(289, 112),
+            ControlPoint1 = new Point(410, 78),
+            ControlPoint2 = new Point(361, 171),
+            End = new Point(455, 155),
+            StartContinuity = BezierEdge.ContinuityType.C1,
+            EndContinuity = BezierEdge.ContinuityType.G1
+        },
+
+        // BezierEdge 2
+        new BezierEdge
+        {
+            Start = new Point(455,155),
+            ControlPoint1 = new Point(649, 122),
+            ControlPoint2 = new Point(439, 317),
+            End = new Point(703, 372),
+            StartContinuity = BezierEdge.ContinuityType.G1,
+            EndContinuity = BezierEdge.ContinuityType.G0
+        },
+
+        new HorizontalEdge
+        {
+            Start = new Point(703, 372),
+            End = new Point(407, 372)
+        },
+
+        // FixedLengthEdge 1
+        new FixedLengthEdge
+        {
+            Start = new Point(407, 372),
+            End = new Point(182, 352),
+            Length = 225
+        },
+
+        new FixedLengthEdge
+        {
+            Start = new Point(182, 352),
+            End = new Point(168, 244),
+            Length = 110
+        },
+
+        new VerticalEdge
+        {
+            Start = new Point(168, 244),
+            End = new Point(168, 146)
+        },
+
+        // NoConstraintEdge
+        new NoConstraintEdge
+        {
+            Start = new Point(168, 146),
+            End = new Point(289, 112)
+        }
+    };
+        }
+
+        private void initialFigureButton_Click(object sender, EventArgs e)
+        {
+            InitEdges();
+            drawingComplete = true;
+            Canvas.Invalidate();
         }
     }
 }

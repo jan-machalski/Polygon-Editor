@@ -16,6 +16,7 @@ namespace projekt_1
             Start = start;
             End = end;
         }
+        public Edge() { }
 
         public Point GetEdgeCenter()
         {
@@ -33,6 +34,7 @@ namespace projekt_1
 
     public class NoConstraintEdge : Edge
     {
+        public NoConstraintEdge() { }
         public NoConstraintEdge(Point start, Point end) : base(start, end) { }
 
         public override Edge Clone()
@@ -72,6 +74,7 @@ namespace projekt_1
 
     public class HorizontalEdge : Edge
     {
+        public HorizontalEdge() { }
         public HorizontalEdge(Point start, Point end) : base(start, end) { }
 
         public override Edge Clone()
@@ -111,6 +114,7 @@ namespace projekt_1
 
     public class VerticalEdge : Edge
     {
+        public VerticalEdge() { }
         public VerticalEdge(Point start, Point end) : base(start, end) { }
 
         public override Edge Clone()
@@ -155,7 +159,8 @@ namespace projekt_1
 
     public class FixedLengthEdge : Edge
     {
-        public double Length { get; private set; }
+        public FixedLengthEdge() { }
+        public double Length { get; set; }
 
         public FixedLengthEdge(Point start, Point end, double length) : base(start, end)
         {
@@ -211,6 +216,7 @@ namespace projekt_1
             G1,  // Ciągłość jednostkowego wektora stycznego
             C1   // Ciągłość wektora stycznego (pełna ciągłość C1)
         }
+        public BezierEdge() { }
 
         // Konstruktor dla automatycznego dopasowania punktów pomocniczych na podstawie sąsiednich krawędzi
         public BezierEdge(Point start, Point end, Edge adjacentStartEdge, Edge adjacentEndEdge) : base(start, end)

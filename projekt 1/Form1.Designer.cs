@@ -35,6 +35,7 @@
             label1 = new Label();
             controlsButton = new Button();
             descriptionButton = new Button();
+            initialFigureButton = new Button();
             ((System.ComponentModel.ISupportInitialize)Canvas).BeginInit();
             SuspendLayout();
             // 
@@ -122,11 +123,22 @@
             descriptionButton.UseVisualStyleBackColor = true;
             descriptionButton.Click += descriptionButton_Click;
             // 
+            // initialFigureButton
+            // 
+            initialFigureButton.Location = new Point(824, 299);
+            initialFigureButton.Name = "initialFigureButton";
+            initialFigureButton.Size = new Size(143, 51);
+            initialFigureButton.TabIndex = 8;
+            initialFigureButton.Text = "Wróć do figury początkowej";
+            initialFigureButton.UseVisualStyleBackColor = true;
+            initialFigureButton.Click += initialFigureButton_Click;
+            // 
             // Form1
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(984, 450);
+            Controls.Add(initialFigureButton);
             Controls.Add(descriptionButton);
             Controls.Add(controlsButton);
             Controls.Add(label1);
@@ -150,5 +162,6 @@
         private Label label1;
         private Button controlsButton;
         private Button descriptionButton;
+        private Button initialFigureButton;
     }
 }
