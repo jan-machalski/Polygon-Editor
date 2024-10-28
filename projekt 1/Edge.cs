@@ -2,10 +2,16 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 
 namespace projekt_1
 {
+    [JsonDerivedType(typeof(BezierEdge), typeDiscriminator: "BezierEdge")]
+    [JsonDerivedType(typeof(VerticalEdge), typeDiscriminator: "VerticalEdge")]
+    [JsonDerivedType(typeof(HorizontalEdge), typeDiscriminator: "HorizontalEdge")]
+    [JsonDerivedType(typeof(FixedLengthEdge), typeDiscriminator: "FixedLengthEdge")]
+    [JsonDerivedType(typeof(NoConstraintEdge), typeDiscriminator: "NoConstraintEdge")]
     public abstract class Edge
     {
         public Point Start { get; set; }
@@ -24,14 +30,13 @@ namespace projekt_1
             return new Point((Start.X + End.X) / 2, (Start.Y + End.Y) / 2);
         }
         public abstract Edge Clone();
-        public abstract void AcceptDraw(IEdgeDrawingVisitor visitor, Graphics g, Pen pen, bool bresenham);
+        public abstract void AcceptDraw(IEdgeDrawingVisitor visitor, Graphics g, Pen pen, bool bresenham, bool wu);
         public abstract bool Accept(IEdgeVisitor visitor, Edge nextEdge, Point delta);
         public abstract bool AcceptNoConstraint(IEdgeVisitor visitor, NoConstraintEdge edge, Point delta);
         public abstract bool AcceptVertical(IEdgeVisitor visitor, VerticalEdge edge, Point delta);
         public abstract bool AcceptHorizontal(IEdgeVisitor visitor, HorizontalEdge edge, Point delta);
         public abstract bool AcceptFixedLength(IEdgeVisitor visitor, FixedLengthEdge edge, Point delta);
     }
-
     public class NoConstraintEdge : Edge
     {
         public NoConstraintEdge() { }
@@ -66,12 +71,11 @@ namespace projekt_1
         {
             return visitor.Visit(currentEdge, this, delta);
         }
-        public override void AcceptDraw(IEdgeDrawingVisitor visitor, Graphics g, Pen pen, bool bresenham)
+        public override void AcceptDraw(IEdgeDrawingVisitor visitor, Graphics g, Pen pen, bool bresenham,bool wu)
         {
-            visitor.DrawNoConstraintEdge(this, g, pen, bresenham);
+            visitor.DrawNoConstraintEdge(this, g, pen, bresenham,wu);
         }
     }
-
     public class HorizontalEdge : Edge
     {
         public HorizontalEdge() { }
@@ -106,12 +110,11 @@ namespace projekt_1
         {
             return visitor.Visit(currentEdge, this, delta);
         }
-        public override void AcceptDraw(IEdgeDrawingVisitor visitor, Graphics g, Pen pen, bool bresenham)
+        public override void AcceptDraw(IEdgeDrawingVisitor visitor, Graphics g, Pen pen, bool bresenham, bool wu)
         {
-            visitor.DrawHorizontalEdge(this, g, pen, bresenham);
+            visitor.DrawHorizontalEdge(this, g, pen, bresenham, wu);
         }
     }
-
     public class VerticalEdge : Edge
     {
         public VerticalEdge() { }
@@ -151,12 +154,11 @@ namespace projekt_1
         {
             return visitor.Visit(currentEdge, this, delta);
         }
-        public override void AcceptDraw(IEdgeDrawingVisitor visitor, Graphics g, Pen pen, bool bresenham)
+        public override void AcceptDraw(IEdgeDrawingVisitor visitor, Graphics g, Pen pen, bool bresenham, bool wu)
         {
-            visitor.DrawVerticalEdge(this, g, pen, bresenham);
+            visitor.DrawVerticalEdge(this, g, pen, bresenham,wu);
         }
     }
-
     public class FixedLengthEdge : Edge
     {
         public FixedLengthEdge() { }
@@ -195,9 +197,9 @@ namespace projekt_1
         {
             return visitor.Visit(currentEdge, this, delta);
         }
-        public override void AcceptDraw(IEdgeDrawingVisitor visitor, Graphics g, Pen pen, bool bresenham)
+        public override void AcceptDraw(IEdgeDrawingVisitor visitor, Graphics g, Pen pen, bool bresenham, bool wu)
         {
-            visitor.DrawFixedLengthEdge(this, g, pen,bresenham);
+            visitor.DrawFixedLengthEdge(this, g, pen,bresenham,wu);
         }
     }
     public class BezierEdge : Edge
@@ -290,9 +292,9 @@ namespace projekt_1
                 EndContinuity = this.EndContinuity
             };
         }
-        public override void AcceptDraw(IEdgeDrawingVisitor visitor, Graphics g, Pen pen, bool bresenham)
+        public override void AcceptDraw(IEdgeDrawingVisitor visitor, Graphics g, Pen pen, bool bresenham, bool wu)
         {
-            visitor.DrawBezier(this,g,pen, bresenham);
+            visitor.DrawBezier(this,g,pen, bresenham,wu);
         }
         public override bool Accept(IEdgeVisitor visitor, Edge nextEdge, Point delta)
         {

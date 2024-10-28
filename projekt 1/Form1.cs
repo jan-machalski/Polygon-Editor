@@ -1,3 +1,7 @@
+using System.Runtime.CompilerServices;
+using System.Runtime.Serialization.Formatters.Binary;
+using System.Text.Json.Serialization.Metadata;
+using System.Text.Json;
 using System.Windows.Forms.VisualStyles;
 
 namespace projekt_1
@@ -18,6 +22,7 @@ namespace projekt_1
         private int draggedCP2 = -1;
         private Point dragStartPoint;
         private Point polygonOffset = Point.Empty;
+        public bool wuClicked = false;
         public Form1()
         {
             InitializeComponent();
@@ -61,7 +66,7 @@ namespace projekt_1
             // Rysowanie wszystkich krawêdzi
             foreach (var edge in edges)
             {
-                edge.AcceptDraw(drawingVisitor, g, edgePen, bresenham);
+                edge.AcceptDraw(drawingVisitor, g, edgePen, bresenham, wuClicked);
             }
 
             for (int i = 0; i < edges.Count; i++)
@@ -871,8 +876,8 @@ namespace projekt_1
 
             // Ustawienia napisu i pola tekstowego z odpowiednimi marginesami
             Label label = new Label() { Left = 10, Top = 15, Text = "D³ugoœæ:", AutoSize = true };
-            TextBox inputBox = new TextBox() { Left = 80, Top = 10, Width = 180, Text = currentLength.ToString("F1") };
-            Button confirmation = new Button() { Text = "OK", Left = 180, Width = 80, Top = 50 };
+            TextBox inputBox = new TextBox() { Left = 100, Top = 10, Width = 140, Text = currentLength.ToString("F1") };
+            Button confirmation = new Button() { Text = "OK", Left = 180, Width = 80, Height=30,Top = 50 };
 
             prompt.Controls.Add(label);
             prompt.Controls.Add(inputBox);
@@ -1125,12 +1130,24 @@ namespace projekt_1
         private void normalDrawButton_Click(object sender, EventArgs e)
         {
             bresenhamButton.Checked = false;
+            wuButton.Checked = false;
+            wuClicked = false;
+            Canvas.Invalidate();
         }
 
         private void bresenhamButton_Click(object sender, EventArgs e)
         {
             normalDrawButton.Checked = false;
-
+            wuButton.Checked = false;
+            wuClicked = false;
+            Canvas.Invalidate();
+        }
+        private void wuButton_Click(object sender, EventArgs e)
+        {
+            bresenhamButton.Checked = false;
+            normalDrawButton.Checked = false;
+            wuClicked = true;
+            Canvas.Invalidate();
         }
 
         private void controlsButton_Click(object sender, EventArgs e)
@@ -1239,6 +1256,28 @@ Opis dzia³ania programu:
             InitEdges();
             drawingComplete = true;
             Canvas.Invalidate();
+        }
+
+        private void saveButton_Click(object sender, EventArgs e)
+        {
+            var options = new JsonSerializerOptions
+            {
+                WriteIndented = true,
+            };
+
+            string jsonString = JsonSerializer.Serialize(edges, options);
+
+            File.WriteAllText("edges.json", jsonString);
+            MessageBox.Show("Pomyœlnie zapisano figurê");
+        }
+
+        private void loadButton_Click(object sender, EventArgs e)
+        {
+            string jsonString = File.ReadAllText("edges.json");
+            edges.Clear();
+            edges = JsonSerializer.Deserialize<List<Edge>>(jsonString);
+            Canvas.Invalidate();
+            drawingComplete = true;
         }
     }
 }

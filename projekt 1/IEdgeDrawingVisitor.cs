@@ -8,11 +8,11 @@ namespace projekt_1
 {
     public interface IEdgeDrawingVisitor
     {
-        void DrawNoConstraintEdge(NoConstraintEdge edge, Graphics g, Pen pen,bool bresenham);
-        void DrawHorizontalEdge(HorizontalEdge edge, Graphics g, Pen pen,bool bresenham);
-        void DrawVerticalEdge(VerticalEdge edge, Graphics g, Pen pen, bool bresenham);
-        void DrawFixedLengthEdge(FixedLengthEdge edge, Graphics g, Pen pen, bool bresenham);
-        public void DrawBezier(BezierEdge edge, Graphics g, Pen pen, bool bresenham);
+        void DrawNoConstraintEdge(NoConstraintEdge edge, Graphics g, Pen pen,bool bresenham,bool wu);
+        void DrawHorizontalEdge(HorizontalEdge edge, Graphics g, Pen pen,bool bresenham, bool wu);
+        void DrawVerticalEdge(VerticalEdge edge, Graphics g, Pen pen, bool bresenham, bool wu);
+        void DrawFixedLengthEdge(FixedLengthEdge edge, Graphics g, Pen pen, bool bresenham, bool wu);
+        public void DrawBezier(BezierEdge edge, Graphics g, Pen pen, bool bresenham, bool wu);
     }
     public class EdgeDrawingVisitor : IEdgeDrawingVisitor
     {
@@ -98,17 +98,110 @@ namespace projekt_1
             }
             brush.Dispose();
         }
-        public void DrawNoConstraintEdge(NoConstraintEdge edge, Graphics g, Pen pen, bool bresenham)
+        private float FracPart(float x) => x - (float)Math.Floor(x);
+        private float RFracPart(float x) => 1 - FracPart(x);
+        private int IPart(float x) => (int)Math.Floor(x);
+
+        private void Plot(Graphics g, int x, int y, float brightness, Color color)
         {
-            if (bresenham)
+            Color blendedColor = Color.FromArgb((int)(brightness * 255), color);
+            using (SolidBrush brush = new SolidBrush(blendedColor))
+            {
+                g.FillRectangle(brush, x, y, 1, 1);
+            }
+        }
+
+        public void DrawLineXiaolinWu(int x0, int y0, int x1, int y1, Graphics g)
+        {
+            Color color = Color.Black;
+            bool steep = Math.Abs(y1 - y0) > Math.Abs(x1 - x0);
+
+            if (steep)
+            {
+                (x0, y0) = (y0, x0);
+                (x1, y1) = (y1, x1);
+            }
+
+            if (x0 > x1)
+            {
+                (x0, x1) = (x1, x0);
+                (y0, y1) = (y1, y0);
+            }
+
+            float dx = x1 - x0;
+            float dy = y1 - y0;
+            float gradient = (dx == 0) ? 1 : dy / dx;
+
+            int xEnd = (int)x0;
+            float yEnd = y0 + gradient * (xEnd - x0);
+            float xGap = RFracPart(x0 + 0.5f);
+            int xPxl1 = xEnd;
+            int yPxl1 = IPart(yEnd);
+
+            if (steep)
+            {
+                Plot(g, yPxl1, xPxl1, RFracPart(yEnd) * xGap, color);
+                Plot(g, yPxl1 + 1, xPxl1, FracPart(yEnd) * xGap, color);
+            }
+            else
+            {
+                Plot(g, xPxl1, yPxl1, RFracPart(yEnd) * xGap, color);
+                Plot(g, xPxl1, yPxl1 + 1, FracPart(yEnd) * xGap, color);
+            }
+
+            float intery = yEnd + gradient;
+
+            xEnd = (int)(x1);
+            yEnd = y1 + gradient * (xEnd - x1);
+            xGap = FracPart(x1 + 0.5f);
+            int xPxl2 = xEnd;
+            int yPxl2 = IPart(yEnd);
+
+            if (steep)
+            {
+                Plot(g, yPxl2, xPxl2, RFracPart(yEnd) * xGap, color);
+                Plot(g, yPxl2 + 1, xPxl2, FracPart(yEnd) * xGap, color);
+            }
+            else
+            {
+                Plot(g, xPxl2, yPxl2, RFracPart(yEnd) * xGap, color);
+                Plot(g, xPxl2, yPxl2 + 1, FracPart(yEnd) * xGap, color);
+            }
+
+            if (steep)
+            {
+                for (int x = xPxl1 + 1; x < xPxl2; x++)
+                {
+                    Plot(g, IPart(intery), x, RFracPart(intery), color);
+                    Plot(g, IPart(intery) + 1, x, FracPart(intery), color);
+                    intery += gradient;
+                }
+            }
+            else
+            {
+                for (int x = xPxl1 + 1; x < xPxl2; x++)
+                {
+                    Plot(g, x, IPart(intery), RFracPart(intery), color);
+                    Plot(g, x, IPart(intery) + 1, FracPart(intery), color);
+                    intery += gradient;
+                }
+            }
+        }
+        public void DrawNoConstraintEdge(NoConstraintEdge edge, Graphics g, Pen pen, bool bresenham, bool wu)
+        {
+            if (wu)
+                DrawLineXiaolinWu(edge.Start.X, edge.Start.Y, edge.End.X, edge.End.Y, g);
+            else if (bresenham)
                 DrawLineBresenham(edge.Start.X, edge.Start.Y, edge.End.X, edge.End.Y, g);
             else
                 g.DrawLine(pen, edge.Start, edge.End);
         }
 
-        public void DrawHorizontalEdge(HorizontalEdge edge, Graphics g, Pen pen, bool bresenham)
+        public void DrawHorizontalEdge(HorizontalEdge edge, Graphics g, Pen pen, bool bresenham, bool wu)
         {
-            if (bresenham)
+            if (wu)
+                DrawLineXiaolinWu(edge.Start.X, edge.Start.Y, edge.End.X, edge.End.Y, g);
+            else if (bresenham)
                 DrawLineBresenham(edge.Start.X, edge.Start.Y, edge.End.X, edge.End.Y, g);
             else
                 g.DrawLine(pen, edge.Start, edge.End);
@@ -119,9 +212,11 @@ namespace projekt_1
             g.DrawLine(new Pen(Color.Blue, 2), center.X - 5, center.Y + offsetY, center.X + 5, center.Y + offsetY);
         }
 
-        public void DrawVerticalEdge(VerticalEdge edge, Graphics g, Pen pen, bool bresenham)
+        public void DrawVerticalEdge(VerticalEdge edge, Graphics g, Pen pen, bool bresenham, bool wu)
         {
-            if (bresenham)
+            if (wu)
+                DrawLineXiaolinWu(edge.Start.X, edge.Start.Y, edge.End.X, edge.End.Y, g);
+            else if (bresenham)
                 DrawLineBresenham(edge.Start.X, edge.Start.Y, edge.End.X, edge.End.Y, g);
             else
                 g.DrawLine(pen, edge.Start, edge.End);
@@ -132,9 +227,11 @@ namespace projekt_1
             g.DrawLine(new Pen(Color.Green, 2), center.X + offsetX, center.Y - 5, center.X + offsetX, center.Y + 5);
         }
 
-        public void DrawFixedLengthEdge(FixedLengthEdge edge, Graphics g, Pen pen, bool bresenham)
+        public void DrawFixedLengthEdge(FixedLengthEdge edge, Graphics g, Pen pen, bool bresenham, bool wu)
         {
-            if (bresenham)
+            if (wu)
+                DrawLineXiaolinWu(edge.Start.X, edge.Start.Y, edge.End.X, edge.End.Y, g);
+            else if (bresenham)
                 DrawLineBresenham(edge.Start.X, edge.Start.Y, edge.End.X, edge.End.Y, g);
             else
                 g.DrawLine(pen, edge.Start, edge.End );
@@ -145,14 +242,14 @@ namespace projekt_1
             g.DrawEllipse(new Pen(Color.Red, 2), center.X - 5, center.Y + offsetY - 5, 10, 10);
             g.DrawString(edge.Length.ToString("F1"), new Font("Arial", 8), Brushes.Black, center.X + 10, center.Y + offsetY - 10);
         }
-        public void DrawBezier(BezierEdge edge, Graphics g, Pen pen, bool bresenham)
+        public void DrawBezier(BezierEdge edge, Graphics g, Pen pen, bool bresenham, bool wu)
         {
            PointF A0 = edge.Start;
             PointF A1 = edge.ControlPoint1;
             PointF A2 = edge.ControlPoint2;
             PointF A3 = edge.End;
 
-            int segmentCount = (int)Math.Sqrt(Math.Pow(A3.X - A0.X, 2) + Math.Pow(A3.Y - A0.Y, 2));
+            int segmentCount = (int)(Math.Sqrt(Math.Pow(A3.X - A0.X, 2) + Math.Pow(A3.Y - A0.Y, 2))/10);
 
             // Ustal wartość d, będącą odwrotnością liczby segmentów
             float d = 1f / segmentCount;
@@ -186,7 +283,10 @@ namespace projekt_1
                 delta2P = new PointF(delta2P.X + delta3P.X, delta2P.Y + delta3P.Y);
 
                 // Rysuj odcinek między poprzednim a aktualnym punktem
-                g.DrawLine(pen, previousPoint, currentPoint);
+                if (wu)
+                    DrawLineXiaolinWu((int)Math.Round(previousPoint.X), (int)Math.Round(previousPoint.Y), (int)Math.Round(currentPoint.X), (int)Math.Round(currentPoint.Y),g);
+                else
+                    g.DrawLine(pen, previousPoint, currentPoint);
 
                 // Aktualizuj poprzedni punkt
                 previousPoint = currentPoint;
