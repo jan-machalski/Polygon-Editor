@@ -18,7 +18,6 @@ namespace projekt_1
     {
         public void DrawLineBresenham(int x0, int y0, int x1, int y1, Graphics g)
         {
-            // Sprawdzenie nachylenia linii
             if (Math.Abs(y1 - y0) < Math.Abs(x1 - x0))
             {
                 if (x0 > x1)
@@ -206,7 +205,6 @@ namespace projekt_1
             else
                 g.DrawLine(pen, edge.Start, edge.End);
 
-            // Rysowanie ikony poziomej
             Point center = edge.GetEdgeCenter();
             int offsetY = 10;
             g.DrawLine(new Pen(Color.Blue, 2), center.X - 5, center.Y + offsetY, center.X + 5, center.Y + offsetY);
@@ -221,7 +219,6 @@ namespace projekt_1
             else
                 g.DrawLine(pen, edge.Start, edge.End);
 
-            // Rysowanie ikony pionowej
             Point center = edge.GetEdgeCenter();
             int offsetX = 10;
             g.DrawLine(new Pen(Color.Green, 2), center.X + offsetX, center.Y - 5, center.X + offsetX, center.Y + 5);
@@ -236,7 +233,6 @@ namespace projekt_1
             else
                 g.DrawLine(pen, edge.Start, edge.End );
 
-            // Rysowanie ikony i długości
             Point center = edge.GetEdgeCenter();
             int offsetY = 10;
             g.DrawEllipse(new Pen(Color.Red, 2), center.X - 5, center.Y + offsetY - 5, 10, 10);
@@ -251,10 +247,8 @@ namespace projekt_1
 
             int segmentCount = (int)(Math.Sqrt(Math.Pow(A3.X - A0.X, 2) + Math.Pow(A3.Y - A0.Y, 2))/10);
 
-            // Ustal wartość d, będącą odwrotnością liczby segmentów
             float d = 1f / segmentCount;
 
-            // Przyrosty deltaP, delta2P i delta3P
             PointF deltaP = new PointF(
                 3 * (A1.X - A0.X) * d + 3 * (A2.X - 2 * A1.X + A0.X) * d * d + (A3.X - 3 * A2.X + 3 * A1.X - A0.X) * d * d * d,
                 3 * (A1.Y - A0.Y) * d + 3 * (A2.Y - 2 * A1.Y + A0.Y) * d * d + (A3.Y - 3 * A2.Y + 3 * A1.Y - A0.Y) * d * d * d
@@ -270,46 +264,38 @@ namespace projekt_1
                 6 * (A3.Y - 3 * A2.Y + 3 * A1.Y - A0.Y) * d * d * d
             );
 
-            // Inicjalizuj punkt początkowy
             PointF currentPoint = A0;
             PointF previousPoint = currentPoint;
 
-            // Rysowanie kolejnych segmentów
             for (int i = 0; i < segmentCount; i++)
             {
-                // Oblicz kolejny punkt na krzywej
                 currentPoint = new PointF(currentPoint.X + deltaP.X, currentPoint.Y + deltaP.Y);
                 deltaP = new PointF(deltaP.X + delta2P.X, deltaP.Y + delta2P.Y);
                 delta2P = new PointF(delta2P.X + delta3P.X, delta2P.Y + delta3P.Y);
 
-                // Rysuj odcinek między poprzednim a aktualnym punktem
                 if (wu)
                     DrawLineXiaolinWu((int)Math.Round(previousPoint.X), (int)Math.Round(previousPoint.Y), (int)Math.Round(currentPoint.X), (int)Math.Round(currentPoint.Y),g);
                 else
                     g.DrawLine(pen, previousPoint, currentPoint);
 
-                // Aktualizuj poprzedni punkt
                 previousPoint = currentPoint;
             }
 
-            // Rysowanie punktów kontrolnych jako brązowe kropki
             SolidBrush brush = new SolidBrush(Color.Brown);
             Pen dashedPen = new Pen(Color.FromArgb(128, Color.Brown), 1)
             {
                 DashStyle = System.Drawing.Drawing2D.DashStyle.Dash
             };
 
-            // Kropki dla punktów kontrolnych
             g.FillEllipse(brush, A1.X - 3, A1.Y - 3, 6, 6);
             g.FillEllipse(brush, A2.X - 3, A2.Y - 3, 6, 6);
 
-            // Przerywane linie od punktów kontrolnych do wierzchołków start i end
-            g.DrawLine(dashedPen, A0, A1); // Linia start -> pierwszy punkt kontrolny
-            g.DrawLine(dashedPen, A1, A2); // Linia pierwszy -> drugi punkt kontrolny
-            g.DrawLine(dashedPen, A2, A3); // Linia drugi punkt kontrolny -> end
+            g.DrawLine(dashedPen, A0, A1); 
+            g.DrawLine(dashedPen, A1, A2); 
+            g.DrawLine(dashedPen, A2, A3); 
             g.DrawLine(dashedPen, A3, A0);
 
-            // Cleanup
+            
             brush.Dispose();
             dashedPen.Dispose();
         }

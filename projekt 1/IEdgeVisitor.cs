@@ -189,43 +189,31 @@ namespace projekt_1
             double deltaY = nextEdge.End.Y - currentEdge.Start.Y;
             double d = Math.Sqrt(deltaX * deltaX + deltaY * deltaY);
 
-            // Łączna długość obu krawędzi
             double totalLength = currentEdge.Length + nextEdge.Length;
 
-            // Sprawdzanie, czy krawędzie mogą zostać połączone
             if (d < totalLength && currentEdge.Length < nextEdge.Length + d && nextEdge.Length < currentEdge.Length + d)
             {
-                // Obliczenie wartości c1 i c2
                 double c1 = (currentEdge.Length * currentEdge.Length - nextEdge.Length * nextEdge.Length + d * d) / (2 * d);
                 double c2 = d - c1;
 
-                // Jednostkowe wektory wzdłuż linii pomiędzy currentEdge.Start i nextEdge.End
                 double unitX = deltaX / d;
                 double unitY = deltaY / d;
 
-                // Wyznaczamy przesunięcie punktu tak, aby krawędzie były odpowiednio rozciągnięte
                 double h = Math.Sqrt(currentEdge.Length * currentEdge.Length - c1 * c1);
 
-                // Środkowy punkt na linii currentEdge.Start - nextEdge.End
 
                 double midX = currentEdge.Start.X + c1 * unitX;
                 double midY = currentEdge.Start.Y + c1 * unitY;
 
-                // Wartości offsetu obliczone z twierdzenia Pitagorasa
                 double offsetX = -unitY * h;
                 double offsetY = unitX * h;
 
-                // Opcja 1: Przesunięcie z dodaniem offsetu
                 Point option1 = new Point((int)(midX + offsetX), (int)(midY + offsetY));
 
-                // Opcja 2: Przesunięcie z odjęciem offsetu (w drugą stronę prostopadle)
                 Point option2 = new Point((int)(midX - offsetX), (int)(midY - offsetY));
 
-                // Obliczamy odległość między oryginalnym currentEdge.End a każdą z opcji
                 double distanceOption1 = Math.Sqrt(Math.Pow(option1.X - currentEdge.End.X, 2) + Math.Pow(option1.Y - currentEdge.End.Y, 2));
                 double distanceOption2 = Math.Sqrt(Math.Pow(option2.X - currentEdge.End.X, 2) + Math.Pow(option2.Y - currentEdge.End.Y, 2));
-
-                // Wybieramy tę opcję, która jest bliżej oryginalnej wartości currentEdge.End
 
                 if (distanceOption1 < distanceOption2)
                 {
@@ -236,14 +224,12 @@ namespace projekt_1
                     currentEdge.End = option2;
                 }
 
-                // Ustawiamy początek następnej krawędzi
                 nextEdge.Start = currentEdge.End;
 
                 return false;
             }
             else
             {
-                // Jeśli nie da się dopasować długości krawędzi, przesuwamy o deltę
                 currentEdge.End = new Point(currentEdge.End.X + delta.X, currentEdge.End.Y + delta.Y);
                 nextEdge.Start = currentEdge.End;
 
@@ -567,47 +553,35 @@ namespace projekt_1
 
         public bool Visit(FixedLengthEdge currentEdge, FixedLengthEdge prevEdge, Point delta)
         {
-            // Obliczenie odległości d między prevEdge.Start + delta i currentEdge.End
             double deltaX = prevEdge.Start.X + delta.X - currentEdge.End.X;
             double deltaY = prevEdge.Start.Y + delta.Y - currentEdge.End.Y;
             double d = Math.Sqrt(deltaX * deltaX + deltaY * deltaY);
 
-            // Łączna długość obu krawędzi
             double totalLength = currentEdge.Length + prevEdge.Length;
 
-            // Sprawdzanie, czy krawędzie mogą zostać połączone
             if (d < totalLength && currentEdge.Length < prevEdge.Length + d && prevEdge.Length < currentEdge.Length + d)
             {
-                // Obliczenie wartości c1 i c2
                 double c1 = (currentEdge.Length * currentEdge.Length - prevEdge.Length * prevEdge.Length + d * d) / (2 * d);
                 double c2 = d - c1;
 
-                // Obliczenie wysokości h, która jest prostopadłym przesunięciem
                 double h = Math.Sqrt(currentEdge.Length * currentEdge.Length - c1 * c1);
 
-                // Jednostkowy wektor wzdłuż linii prevEdge.Start -> currentEdge.End
                 double unitX = deltaX / d;
                 double unitY = deltaY / d;
 
-                // Wyznaczenie środkowego punktu przesuniętego o c1 na linii prevEdge.Start -> currentEdge.End
-                double midX = currentEdge.End.X + c1 * unitX;  // Przesuwamy od currentEdge.End w stronę prevEdge.Start
+                double midX = currentEdge.End.X + c1 * unitX; 
                 double midY = currentEdge.End.Y + c1 * unitY;
 
-                // Obliczenie prostopadłego przesunięcia na podstawie h
                 double offsetX = -unitY * h;
                 double offsetY = unitX * h;
 
-                // Opcja 1: Przesunięcie z dodaniem offsetu (w jedną stronę prostopadle)
                 Point option1 = new Point((int)(midX + offsetX), (int)(midY + offsetY));
 
-                // Opcja 2: Przesunięcie z odjęciem offsetu (w drugą stronę prostopadle)
                 Point option2 = new Point((int)(midX - offsetX), (int)(midY - offsetY));
 
-                // Obliczamy odległość między oryginalnym currentEdge.Start a każdą z opcji
                 double distanceOption1 = Math.Sqrt(Math.Pow(option1.X - currentEdge.Start.X, 2) + Math.Pow(option1.Y - currentEdge.Start.Y, 2));
                 double distanceOption2 = Math.Sqrt(Math.Pow(option2.X - currentEdge.Start.X, 2) + Math.Pow(option2.Y - currentEdge.Start.Y, 2));
 
-                // Wybieramy tę opcję, która jest bliżej oryginalnej wartości currentEdge.Start
                 if (distanceOption1 < distanceOption2)
                 {
                     currentEdge.Start = option1;
@@ -617,14 +591,12 @@ namespace projekt_1
                     currentEdge.Start = option2;
                 }
 
-                // Ustawiamy koniec poprzedniej krawędzi na nowy początek bieżącej krawędzi
                 prevEdge.End = currentEdge.Start;
 
                 return false;
             }
             else
             {
-                // Jeśli nie da się dopasować długości krawędzi, przesuwamy o deltę
                 currentEdge.Start = new Point(currentEdge.Start.X + delta.X, currentEdge.Start.Y + delta.Y);
                 prevEdge.End = currentEdge.Start;
 
